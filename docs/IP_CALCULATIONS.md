@@ -46,15 +46,21 @@ The library defines core constants in `src/core/bigint.ts`:
 
 ```typescript
 // IPv4 constants
-export const BITS4 = 32;
+export const BITS4 = 32n;
 export const MAX4 = (1n << 32n) - 1n; // 4,294,967,295
 
 // IPv6 constants
-export const BITS6 = 128;
+export const BITS6 = 128n;
 export const MAX6 = (1n << 128n) - 1n; // 340,282,366,920,938,463,463,374,607,431,768,211,455
 
 // Prefix mask generation
 export function prefixMask(prefix: number, bits: number): bigint {
+  if (!Number.isInteger(bits) || bits <= 0) {
+    throw new RangeError(`bits must be a positive integer, got ${bits}`);
+  }
+  if (!Number.isInteger(prefix) || prefix < 0 || prefix > bits) {
+    throw new RangeError(`prefix must be an integer within 0..${bits}, got ${prefix}`);
+  }
   if (prefix === 0) return 0n;
   if (prefix >= bits) return (1n << BigInt(bits)) - 1n;
   return ((1n << BigInt(prefix)) - 1n) << BigInt(bits - prefix);
@@ -62,7 +68,15 @@ export function prefixMask(prefix: number, bits: number): bigint {
 
 // Host mask (inverse of prefix mask)
 export function hostMask(prefix: number, bits: number): bigint {
-  return ((1n << BigInt(bits)) - 1n) ^ prefixMask(prefix, bits);
+  if (!Number.isInteger(bits) || bits <= 0) {
+    throw new RangeError(`bits must be a positive integer, got ${bits}`);
+  }
+  if (!Number.isInteger(prefix) || prefix < 0 || prefix > bits) {
+    throw new RangeError(`prefix must be an integer within 0..${bits}, got ${prefix}`);
+  }
+  const fullMask = (1n << BigInt(bits)) - 1n;
+  const prefixMaskValue = prefixMask(prefix, bits);
+  return fullMask & ~prefixMaskValue;
 }
 ```
 
@@ -333,22 +347,26 @@ graph TD
 function rangeToCIDRs(
   start: bigint,
   end: bigint,
-  bits: number
+  bits: 32 | 128
 ): Array<{ network: bigint; prefix: number }> {
   const cidrs: Array<{ network: bigint; prefix: number }> = [];
   let current = start;
 
   while (current <= end) {
     // Find the largest block that:
-    // 1. Starts at current address
-    // 2. Is properly aligned
-    // 3. Doesn't exceed the end address
+    // 1. Is properly aligned
+    // 2. Fits within [current, end]
+    // 3. May start after current (aligned boundary)
 
-    const maxBlock = maxAlignedBlock(current, end, bits);
-    cidrs.push(maxBlock);
+    const res = maxAlignedBlock(current, end, bits);
+    if (res === null) {
+      throw new Error(`No valid block found for range [${current}, ${end}]`);
+    }
 
-    const blockSize = 1n << BigInt(bits - maxBlock.prefix);
-    current += blockSize;
+    cidrs.push({ network: res.block, prefix: res.prefix });
+
+    const blockSize = 1n << BigInt(bits - res.prefix);
+    current = res.block + blockSize;
   }
 
   return cidrs;
@@ -358,23 +376,26 @@ function maxAlignedBlock(
   start: bigint,
   end: bigint,
   bits: number
-): { network: bigint; prefix: number } {
-  let prefix = bits;
-
-  // Find the longest prefix where:
-  // 1. start is aligned to the block boundary
-  // 2. the entire block fits within [start, end]
-  while (prefix > 0) {
+): { block: bigint; prefix: number } {
+  // Search from largest block (prefix 0) to smallest (prefix bits)
+  // to find the largest block that fits within [start, end]
+  for (let prefix = 0; prefix <= bits; prefix++) {
     const blockSize = 1n << BigInt(bits - prefix);
-    const network = start & prefixMask(prefix, bits);
+    let network = start & prefixMask(prefix, bits);
 
-    if (network === start && start + blockSize - 1n <= end) {
-      return { network, prefix };
+    // If network is before start, move to next aligned boundary
+    if (network < start) {
+      network += blockSize;
     }
-    prefix++;
+
+    // Check if this aligned block fits within [start, end]
+    if (network + blockSize - 1n <= end) {
+      return { block: network, prefix };
+    }
   }
 
-  return { network: start, prefix: bits };
+  // Fallback: single host block at start
+  return { block: start, prefix: bits };
 }
 ```
 

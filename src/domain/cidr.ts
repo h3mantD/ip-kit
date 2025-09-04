@@ -90,7 +90,7 @@ export class CIDR<V extends IPVersion = IPVersion> {
   }
 
   firstHost(opts?: { includeEdges?: boolean }): typeof this.ip {
-    const includeEdges = opts?.includeEdges ?? this.prefix >= (this.version === 4 ? 31 : 127);
+    const includeEdges = opts?.includeEdges ?? (this.version === 6 || this.prefix >= 31);
     if (!includeEdges && this.prefix >= (this.version === 4 ? 31 : 127)) {
       throw new InvariantError('No hosts available');
     }
