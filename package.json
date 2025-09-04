@@ -1,6 +1,6 @@
 {
   "name": "@h3mantd/ip-kit",
-  "version": "0.1.0-alpha",
+  "version": "1.0.0",
   "description": "Class-based IPv4/IPv6 toolkit for JS/TS: CIDR math, ranges, allocator, trie — bigint + generators.",
   "type": "module",
   "license": "MIT",
