@@ -23,11 +23,31 @@ export function ptrV4(ip: bigint): string {
 }
 
 /**
+ * Returns the reverse DNS zone label for an IPv4 network given a zonePrefix.
+ * The zone contains only the network octets matching zonePrefix (whole-octet
+ * coverage). For example, for a /24 this returns "1.168.192.in-addr.arpa".
+ */
+export function ptrV4Zone(ip: bigint, zonePrefix: number): string {
+  const octets = [
+    Number(ip & 0xffn),
+    Number((ip >> 8n) & 0xffn),
+    Number((ip >> 16n) & 0xffn),
+    Number((ip >> 24n) & 0xffn),
+  ];
+  const usedOctets = Math.floor(zonePrefix / 8); // number of full octets in the zone
+  if (usedOctets === 0) return 'in-addr.arpa';
+  const hostOctets = 4 - usedOctets;
+  const zoneOctets = octets.slice(hostOctets);
+  return zoneOctets.join('.') + '.in-addr.arpa';
+}
+
+/**
  * Returns the PTR record for an IPv6 address.
  */
 export function ptrV6(ip: bigint): string {
   const nibbles: string[] = [];
-  for (let i = 31; i >= 0; i--) {
+  // Build nibble sequence LSB-first to match reverse nibble ordering for PTR
+  for (let i = 0; i < 32; i++) {
     const nibble = Number((ip >> BigInt(i * 4)) & 0xfn);
     nibbles.push(nibble.toString(16));
   }
@@ -45,7 +65,7 @@ export function ptrZonesForCIDR(ip: bigint, prefix: number, bits: 32 | 128): str
     const zoneMask = prefixMask(zonePrefix, 32);
     const network = ip & zoneMask;
     // For an IPv4 zone, ptrV4(network) returns the full reverse; caller can interpret
-    return [ptrV4(network)];
+    return [ptrV4Zone(network, zonePrefix)];
   } else {
     // IPv6: nibble-aligned zones. Round prefix down to a multiple of 4
     const nibblePrefix = Math.floor(prefix / 4) * 4;

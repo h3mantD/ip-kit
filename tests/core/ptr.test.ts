@@ -7,8 +7,10 @@ describe('ptr utils', () => {
   });
 
   it('ptrV6 basic', () => {
-    // ::1 -> nibble representation ends with 1
-    expect(ptrV6(1n)).toContain('ip6.arpa');
+  // ::1 -> nibble representation LSB-first should start with '1' then 31 '0' nibbles
+  const got = ptrV6(1n);
+  const expected = '1.' + new Array(31).fill('0').join('.') + '.ip6.arpa';
+  expect(got).toBe(expected);
   });
 
   it('ptrZonesForCIDR ipv4 /24', () => {
