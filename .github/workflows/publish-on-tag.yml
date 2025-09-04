@@ -1,0 +1,35 @@
+name: publish-on-tag
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: read
+  id-token: write
+  packages: write
+
+env:
+  NPM_CONFIG_PROVENANCE: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with: { version: 9 }
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: 'https://registry.npmjs.org/'
+          cache: 'pnpm'
+          always-auth: true
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run build
+      - run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

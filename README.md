@@ -2,21 +2,21 @@
 
 TypeScript IP Toolkit for IPv4/IPv6 math, CIDR operations, ranges, allocation, and trie lookups.
 
-[![npm version](https://badge.fury.io/js/ip-kit.svg)](https://badge.fury.io/js/ip-kit)
-[![Node.js CI](https://github.com/h3mantD/ip-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/h3mantD/ip-kit/actions/workflows/ci.yml)
-[![Coverage](https://coveralls.io/repos/github/h3mantD/ip-kit/badge.svg)](https://coveralls.io/github/h3mantD/ip-kit)
+[![CI](https://github.com/h3mantD/ip-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/h3mantD/ip-kit/actions/workflows/ci.yml)
+[![npm version](https://img.shields.io/npm/v/@h3mantd/ip-kit.svg)](https://www.npmjs.com/package/@h3mantd/ip-kit)
+[![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
 ## Quick Start
 
 ```typescript
-import { ip, cidr, IPv4, CIDR } from "ip-kit";
+import { ip, cidr, IPv4, CIDR } from 'ip-kit';
 
 // Parse IPs
-const ipv4 = ip("192.168.1.1");
-const ipv6 = ip("2001:db8::1");
+const ipv4 = ip('192.168.1.1');
+const ipv6 = ip('2001:db8::1');
 
 // Parse CIDRs
-const network = cidr("192.168.1.0/24");
+const network = cidr('192.168.1.0/24');
 
 // Get network info
 console.log(network.network().toString()); // 192.168.1.0
@@ -24,7 +24,7 @@ console.log(network.broadcast().toString()); // 192.168.1.255
 console.log(network.size()); // 256n
 
 // Check containment
-console.log(network.contains(ip("192.168.1.50"))); // true
+console.log(network.contains(ip('192.168.1.50'))); // true
 
 // Iterate hosts
 for (const host of network.hosts()) {
@@ -49,13 +49,13 @@ console.log(subnets.length); // 4
 
 ```bash
 # Using npm
-npm install ip-kit
+npm install @h3mantd/ip-kit
 
 # Using pnpm
-pnpm add ip-kit
+pnpm add @h3mantd/ip-kit
 
 # Using yarn
-yarn add ip-kit
+yarn add @h3mantd/ip-kit
 ```
 
 ### Build from Source
@@ -194,12 +194,8 @@ class IPRange<V extends IPVersion = IPVersion> {
 ```typescript
 class RangeSet<V extends IPVersion = IPVersion> {
   // Static methods
-  static fromCIDRs<V extends IPVersion>(
-    cidrs: Array<CIDR<V> | string>,
-  ): RangeSet<V>;
-  static fromRanges<V extends IPVersion>(
-    ranges: Array<IPRange<V>>,
-  ): RangeSet<V>;
+  static fromCIDRs<V extends IPVersion>(cidrs: Array<CIDR<V> | string>): RangeSet<V>;
+  static fromRanges<V extends IPVersion>(ranges: Array<IPRange<V>>): RangeSet<V>;
 
   // Instance methods
   isEmpty(): boolean;
@@ -263,22 +259,22 @@ class RadixTrie<V extends IPVersion = IPVersion, T = unknown> {
 ### IPv4 Operations
 
 ```typescript
-import { IPv4, CIDR } from "ip-kit";
+import { IPv4, CIDR } from 'ip-kit';
 
 // Parse different formats
-const ip1 = IPv4.parse("192.168.1.1");
+const ip1 = IPv4.parse('192.168.1.1');
 const ip2 = IPv4.parse(3232235777); // number
 const ip3 = IPv4.parse(3232235777n); // bigint
 const ip4 = IPv4.parse(new Uint8Array([192, 168, 1, 1])); // bytes
 
 // CIDR operations
-const cidr = CIDR.parse("192.168.1.0/24");
+const cidr = CIDR.parse('192.168.1.0/24');
 console.log(cidr.network().toString()); // '192.168.1.0'
 console.log(cidr.broadcast().toString()); // '192.168.1.255'
 console.log(cidr.size()); // 256n
 
 // Check containment
-console.log(cidr.contains(IPv4.parse("192.168.1.100"))); // true
+console.log(cidr.contains(IPv4.parse('192.168.1.100'))); // true
 
 // Iterate hosts (excludes network/broadcast for /24)
 for (const host of cidr.hosts()) {
@@ -294,14 +290,14 @@ console.log(subnets.map((s) => s.toString()));
 ### IPv6 Operations
 
 ```typescript
-import { IPv6, CIDR } from "ip-kit";
+import { IPv6, CIDR } from 'ip-kit';
 
 // Parse with compression
-const ip = IPv6.parse("2001:0db8:0000:0000:0000:0000:0000:0001");
+const ip = IPv6.parse('2001:0db8:0000:0000:0000:0000:0000:0001');
 console.log(ip.toString()); // '2001:db8::1'
 
 // CIDR operations
-const cidr = CIDR.parse("2001:db8::/32");
+const cidr = CIDR.parse('2001:db8::/32');
 console.log(cidr.size()); // 79228162514264337593543950336n
 
 // IPv6 always includes all addresses in hosts()
@@ -312,14 +308,14 @@ console.log(hosts.length); // Very large, use with limit
 ### IP Ranges
 
 ```typescript
-import { IPRange, IPv4 } from "ip-kit";
+import { IPRange, IPv4 } from 'ip-kit';
 
 // Parse range
-const range = IPRange.parse("192.168.1.10 - 192.168.1.20");
+const range = IPRange.parse('192.168.1.10 - 192.168.1.20');
 console.log(range.size()); // 11n
 
 // Check containment
-console.log(range.contains(IPv4.parse("192.168.1.15"))); // true
+console.log(range.contains(IPv4.parse('192.168.1.15'))); // true
 
 // Iterate IPs
 for (const ip of range.ips()) {
@@ -334,11 +330,11 @@ console.log(cidrs.map((c) => c.toString()));
 ### Range Set Operations
 
 ```typescript
-import { RangeSet, CIDR, IPv4 } from "ip-kit";
+import { RangeSet, CIDR, IPv4 } from 'ip-kit';
 
 // Create range sets from CIDRs
-const set1 = RangeSet.fromCIDRs(["192.168.1.0/25", "192.168.2.0/24"]);
-const set2 = RangeSet.fromCIDRs(["192.168.1.128/25", "192.168.3.0/24"]);
+const set1 = RangeSet.fromCIDRs(['192.168.1.0/25', '192.168.2.0/24']);
+const set2 = RangeSet.fromCIDRs(['192.168.1.128/25', '192.168.3.0/24']);
 
 // Union (combine ranges)
 const union = set1.union(set2);
@@ -353,22 +349,22 @@ const difference = set1.subtract(set2);
 console.log(difference.size()); // 512n
 
 // Check containment
-console.log(set1.contains(IPv4.parse("192.168.1.50"))); // true
-console.log(set1.containsCIDR(CIDR.parse("192.168.1.64/26"))); // true
+console.log(set1.contains(IPv4.parse('192.168.1.50'))); // true
+console.log(set1.containsCIDR(CIDR.parse('192.168.1.64/26'))); // true
 
 // Convert to minimal CIDRs
 const minimalCIDRs = union.toCIDRs();
-console.log(minimalCIDRs.map(c => c.toString()));
+console.log(minimalCIDRs.map((c) => c.toString()));
 // ['192.168.1.0/24', '192.168.2.0/24', '192.168.3.0/24']
 ```
 
 ### IP Address Allocation
 
 ```typescript
-import { Allocator, CIDR, IPv4 } from "ip-kit";
+import { Allocator, CIDR, IPv4 } from 'ip-kit';
 
 // Create allocator for a /24 network
-const parent = CIDR.parse("192.168.1.0/24");
+const parent = CIDR.parse('192.168.1.0/24');
 const allocator = new Allocator(parent);
 
 // Allocate next available IP
@@ -376,11 +372,11 @@ const ip1 = allocator.allocateNext();
 console.log(ip1?.toString()); // '192.168.1.1'
 
 // Allocate specific IP
-const success = allocator.allocateIP(IPv4.parse("192.168.1.10"));
+const success = allocator.allocateIP(IPv4.parse('192.168.1.10'));
 console.log(success); // true
 
 // Allocate CIDR block
-const cidrSuccess = allocator.allocateCIDR(CIDR.parse("192.168.1.64/26"));
+const cidrSuccess = allocator.allocateCIDR(CIDR.parse('192.168.1.64/26'));
 console.log(cidrSuccess); // true
 
 // Find next available IP
@@ -389,7 +385,7 @@ console.log(next?.toString()); // '192.168.1.2'
 
 // Get free blocks
 const freeBlocks = allocator.freeBlocks({ minPrefix: 27 });
-console.log(freeBlocks.map(b => b.toString()));
+console.log(freeBlocks.map((b) => b.toString()));
 
 // Check utilization
 console.log(`Utilization: ${(allocator.utilization() * 100).toFixed(1)}%`);
@@ -401,20 +397,20 @@ console.log(`Available IPs: ${allocator.availableCount()}`);
 ### Longest-Prefix Matching (Routing)
 
 ```typescript
-import { RadixTrie, CIDR, IPv4 } from "ip-kit";
+import { RadixTrie, CIDR, IPv4 } from 'ip-kit';
 
 // Create routing table
 const routingTable = new RadixTrie<4, string>(4);
 
 // Add routes with associated interface/gateway info
 routingTable
-  .insert(CIDR.parse("0.0.0.0/0"), "default-gateway")
-  .insert(CIDR.parse("192.168.0.0/16"), "lan-interface")
-  .insert(CIDR.parse("192.168.1.0/24"), "server-subnet")
-  .insert(CIDR.parse("192.168.1.128/25"), "dmz-subnet");
+  .insert(CIDR.parse('0.0.0.0/0'), 'default-gateway')
+  .insert(CIDR.parse('192.168.0.0/16'), 'lan-interface')
+  .insert(CIDR.parse('192.168.1.0/24'), 'server-subnet')
+  .insert(CIDR.parse('192.168.1.128/25'), 'dmz-subnet');
 
 // Find best route for destination IP
-const destIP = IPv4.parse("192.168.1.150");
+const destIP = IPv4.parse('192.168.1.150');
 const route = routingTable.longestMatch(destIP);
 
 if (route) {
@@ -424,7 +420,7 @@ if (route) {
 }
 
 // Remove a route
-routingTable.remove(CIDR.parse("192.168.1.128/25"));
+routingTable.remove(CIDR.parse('192.168.1.128/25'));
 
 // Get all routes
 const allRoutes = routingTable.getCIDRs();
@@ -434,20 +430,20 @@ console.log(`Total routes: ${routingTable.size()}`);
 ### Error Handling
 
 ```typescript
-import { IPv4, CIDR, ParseError } from "ip-kit";
+import { IPv4, CIDR, ParseError } from 'ip-kit';
 
 try {
-  const ip = IPv4.parse("256.1.1.1"); // Invalid
+  const ip = IPv4.parse('256.1.1.1'); // Invalid
 } catch (error) {
   if (error instanceof ParseError) {
-    console.log("Parse error:", error.message);
+    console.log('Parse error:', error.message);
   }
 }
 
 try {
-  const cidr = CIDR.parse("192.168.1.0/33"); // Invalid prefix
+  const cidr = CIDR.parse('192.168.1.0/33'); // Invalid prefix
 } catch (error) {
-  console.log("Invalid CIDR:", error.message);
+  console.log('Invalid CIDR:', error.message);
 }
 ```
 
@@ -456,7 +452,7 @@ try {
 ### IPAM (IP Address Management) System
 
 ```typescript
-import { Allocator, RangeSet, CIDR, IPv4 } from "ip-kit";
+import { Allocator, RangeSet, CIDR, IPv4 } from 'ip-kit';
 
 // Simulate IPAM for a data center
 class IPAMSystem {
@@ -486,22 +482,22 @@ class IPAMSystem {
 
 // Usage
 const ipam = new IPAMSystem();
-ipam.addSubnet("web-servers", "10.0.1.0/24", ["10.0.1.1/32", "10.0.1.2/32"]);
-ipam.addSubnet("database", "10.0.2.0/24");
+ipam.addSubnet('web-servers', '10.0.1.0/24', ['10.0.1.1/32', '10.0.1.2/32']);
+ipam.addSubnet('database', '10.0.2.0/24');
 
-const webIP = ipam.allocateIP("web-servers");
+const webIP = ipam.allocateIP('web-servers');
 console.log(`Allocated web server IP: ${webIP?.toString()}`);
 
-console.log(`Web subnet utilization: ${(ipam.getUtilization("web-servers") * 100).toFixed(1)}%`);
+console.log(`Web subnet utilization: ${(ipam.getUtilization('web-servers') * 100).toFixed(1)}%`);
 
-const freeBlocks = ipam.findFreeBlocks("database", 25);
+const freeBlocks = ipam.findFreeBlocks('database', 25);
 console.log(`Available /25 blocks in database subnet: ${freeBlocks.length}`);
 ```
 
 ### Routing Table Implementation
 
 ```typescript
-import { RadixTrie, CIDR, IPv4 } from "ip-kit";
+import { RadixTrie, CIDR, IPv4 } from 'ip-kit';
 
 interface RouteInfo {
   interface: string;
@@ -541,15 +537,15 @@ class RoutingTable {
 
 // Usage
 const routing = new RoutingTable();
-routing.addRoute("0.0.0.0/0", { interface: "eth0", gateway: "192.168.1.1", metric: 100 });
-routing.addRoute("192.168.1.0/24", { interface: "eth1", metric: 10 });
-routing.addRoute("10.0.0.0/8", { interface: "eth2", metric: 20 });
+routing.addRoute('0.0.0.0/0', { interface: 'eth0', gateway: '192.168.1.1', metric: 100 });
+routing.addRoute('192.168.1.0/24', { interface: 'eth1', metric: 10 });
+routing.addRoute('10.0.0.0/8', { interface: 'eth2', metric: 20 });
 
-const route = routing.lookupRoute("192.168.1.50");
+const route = routing.lookupRoute('192.168.1.50');
 console.log(`Route to 192.168.1.50: ${route?.interface} (metric: ${route?.metric})`);
 
 const allRoutes = routing.getAllRoutes();
-console.log("All routes:", allRoutes);
+console.log('All routes:', allRoutes);
 ```
 
 ## Caveats and Design Decisions
