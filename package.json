@@ -1,0 +1,60 @@
+{
+  "name": "ip-toolkit",
+  "version": "0.1.0-alpha",
+  "description": "TypeScript IP Toolkit for IPv4/IPv6 math, CIDR operations, ranges, allocation, and trie lookups",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest",
+    "test:coverage": "vitest --coverage",
+    "lint": "eslint src/**/*.ts tests/**/*.ts",
+    "format": "prettier --write src tests",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "c8": "^8.0.0",
+    "eslint": "^8.0.0",
+    "prettier": "^3.0.0",
+    "tsup": "^7.0.0",
+    "typescript": "^5.0.0",
+    "vitest": "^1.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/h3mantD/ip-toolkit.git"
+  },
+  "keywords": [
+    "ip",
+    "ip-tools",
+    "ipv4",
+    "ipv6",
+    "cidr",
+    "subnet",
+    "range",
+    "trie",
+    "allocator"
+  ],
+  "author": "h3mantd",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/h3mantD/ip-toolkit/issues"
+  },
+  "homepage": "https://github.com/h3mantD/ip-toolkit#readme"
+}

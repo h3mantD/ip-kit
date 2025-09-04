@@ -1,0 +1,45 @@
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Build output
+dist/
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+
+# Coverage / Testing
+coverage/
+.vitest/
+.jest/
+*.lcov
+
+# Logs
+logs
+*.log
+*.log.*
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*.swn
+*.bak
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+.env.*
+!.env.example
+
+# Misc
+.cache/
+.tmp/
+.github/copilot-instructions*
+.github/prompts/*
