@@ -36,6 +36,8 @@ const subnets = Array.from(network.subnets(26));
 console.log(subnets.length); // 4
 ```
 
+> 💡 **See more examples** in the [`examples/`](./examples/) directory!
+
 ## Installation
 
 ### Prerequisites
@@ -72,10 +74,14 @@ npm run build
 - ✅ Host iteration with proper /31 and /127 handling
 - ✅ Subnetting and splitting
 - ✅ IP ranges and CIDR conversion
+- ✅ **Range set operations** (union, intersect, subtract)
+- ✅ **IP address allocation** with conflict detection
+- ✅ **Radix trie** for longest-prefix matching
 - ✅ BigInt-based math for precision
 - ✅ Lazy iterators for memory efficiency
 - ✅ TypeScript strict mode with full type safety
 - ✅ Dual ESM/CJS builds with TypeScript declarations
+- ✅ Comprehensive test coverage (106+ tests)
 
 ## API Reference
 
@@ -183,13 +189,73 @@ class IPRange<V extends IPVersion = IPVersion> {
 }
 ```
 
-### Error Classes
+### RangeSet Classes
 
 ```typescript
-class ParseError extends Error {}
-class VersionMismatchError extends Error {}
-class OutOfRangeError extends Error {}
-class InvariantError extends Error {}
+class RangeSet<V extends IPVersion = IPVersion> {
+  // Static methods
+  static fromCIDRs<V extends IPVersion>(
+    cidrs: Array<CIDR<V> | string>,
+  ): RangeSet<V>;
+  static fromRanges<V extends IPVersion>(
+    ranges: Array<IPRange<V>>,
+  ): RangeSet<V>;
+
+  // Instance methods
+  isEmpty(): boolean;
+  size(): bigint;
+  union(other: RangeSet<V>): RangeSet<V>;
+  intersect(other: RangeSet<V>): RangeSet<V>;
+  subtract(other: RangeSet<V>): RangeSet<V>;
+  contains(ip: IP<V>): boolean;
+  containsCIDR(cidr: CIDR<V>): boolean;
+  *ips(limit?: number): Generator<IP<V>>;
+  toCIDRs(): CIDR<V>[];
+  toString(): string;
+}
+```
+
+### Allocator Classes
+
+```typescript
+class Allocator<V extends IPVersion = IPVersion> {
+  readonly parent: CIDR<V>;
+  readonly taken: RangeSet<V>;
+  readonly version: V;
+
+  constructor(parent: CIDR<V>, taken?: RangeSet<V>);
+
+  // Allocation methods
+  nextAvailable(from?: IP<V>): IP<V> | null;
+  allocateNext(): IP<V> | null;
+  allocateIP(ip: IP<V>): boolean;
+  allocateCIDR(cidr: CIDR<V>): boolean;
+
+  // Query methods
+  freeBlocks(opts?: { minPrefix?: number; maxResults?: number }): CIDR<V>[];
+  availableCount(): bigint;
+  utilization(): number;
+}
+```
+
+### RadixTrie Classes
+
+```typescript
+class RadixTrie<V extends IPVersion = IPVersion, T = unknown> {
+  readonly version: V;
+
+  constructor(version: V);
+
+  // Core methods
+  insert(cidr: CIDR<V>, value?: T): this;
+  remove(cidr: CIDR<V>): this;
+  longestMatch(ip: IP<V>): { cidr: CIDR<V>; value?: T } | null;
+
+  // Utility methods
+  isEmpty(): boolean;
+  size(): number;
+  getCIDRs(): CIDR<V>[];
+}
 ```
 
 ## Usage Examples
@@ -265,6 +331,106 @@ const cidrs = range.toCIDRs();
 console.log(cidrs.map((c) => c.toString()));
 ```
 
+### Range Set Operations
+
+```typescript
+import { RangeSet, CIDR, IPv4 } from "ip-toolkit";
+
+// Create range sets from CIDRs
+const set1 = RangeSet.fromCIDRs(["192.168.1.0/25", "192.168.2.0/24"]);
+const set2 = RangeSet.fromCIDRs(["192.168.1.128/25", "192.168.3.0/24"]);
+
+// Union (combine ranges)
+const union = set1.union(set2);
+console.log(union.size()); // 512n + 256n = 768n
+
+// Intersection (overlapping ranges)
+const intersection = set1.intersect(set2);
+console.log(intersection.size()); // 0n (no overlap)
+
+// Subtraction (remove ranges)
+const difference = set1.subtract(set2);
+console.log(difference.size()); // 512n
+
+// Check containment
+console.log(set1.contains(IPv4.parse("192.168.1.50"))); // true
+console.log(set1.containsCIDR(CIDR.parse("192.168.1.64/26"))); // true
+
+// Convert to minimal CIDRs
+const minimalCIDRs = union.toCIDRs();
+console.log(minimalCIDRs.map(c => c.toString()));
+// ['192.168.1.0/24', '192.168.2.0/24', '192.168.3.0/24']
+```
+
+### IP Address Allocation
+
+```typescript
+import { Allocator, CIDR, IPv4 } from "ip-toolkit";
+
+// Create allocator for a /24 network
+const parent = CIDR.parse("192.168.1.0/24");
+const allocator = new Allocator(parent);
+
+// Allocate next available IP
+const ip1 = allocator.allocateNext();
+console.log(ip1?.toString()); // '192.168.1.1'
+
+// Allocate specific IP
+const success = allocator.allocateIP(IPv4.parse("192.168.1.10"));
+console.log(success); // true
+
+// Allocate CIDR block
+const cidrSuccess = allocator.allocateCIDR(CIDR.parse("192.168.1.64/26"));
+console.log(cidrSuccess); // true
+
+// Find next available IP
+const next = allocator.nextAvailable();
+console.log(next?.toString()); // '192.168.1.2'
+
+// Get free blocks
+const freeBlocks = allocator.freeBlocks({ minPrefix: 27 });
+console.log(freeBlocks.map(b => b.toString()));
+
+// Check utilization
+console.log(`Utilization: ${(allocator.utilization() * 100).toFixed(1)}%`);
+
+// Get available count
+console.log(`Available IPs: ${allocator.availableCount()}`);
+```
+
+### Longest-Prefix Matching (Routing)
+
+```typescript
+import { RadixTrie, CIDR, IPv4 } from "ip-toolkit";
+
+// Create routing table
+const routingTable = new RadixTrie<4, string>(4);
+
+// Add routes with associated interface/gateway info
+routingTable
+  .insert(CIDR.parse("0.0.0.0/0"), "default-gateway")
+  .insert(CIDR.parse("192.168.0.0/16"), "lan-interface")
+  .insert(CIDR.parse("192.168.1.0/24"), "server-subnet")
+  .insert(CIDR.parse("192.168.1.128/25"), "dmz-subnet");
+
+// Find best route for destination IP
+const destIP = IPv4.parse("192.168.1.150");
+const route = routingTable.longestMatch(destIP);
+
+if (route) {
+  console.log(`Route: ${route.cidr.toString()}`);
+  console.log(`Next hop: ${route.value}`);
+  // Output: Route: 192.168.1.128/25, Next hop: dmz-subnet
+}
+
+// Remove a route
+routingTable.remove(CIDR.parse("192.168.1.128/25"));
+
+// Get all routes
+const allRoutes = routingTable.getCIDRs();
+console.log(`Total routes: ${routingTable.size()}`);
+```
+
 ### Error Handling
 
 ```typescript
@@ -283,6 +449,107 @@ try {
 } catch (error) {
   console.log("Invalid CIDR:", error.message);
 }
+```
+
+## Advanced Examples
+
+### IPAM (IP Address Management) System
+
+```typescript
+import { Allocator, RangeSet, CIDR, IPv4 } from "ip-toolkit";
+
+// Simulate IPAM for a data center
+class IPAMSystem {
+  private allocators: Map<string, Allocator<4>> = new Map();
+
+  addSubnet(name: string, cidr: string, takenRanges: string[] = []) {
+    const parent = CIDR.parse(cidr) as CIDR<4>;
+    const taken = RangeSet.fromCIDRs(takenRanges);
+    this.allocators.set(name, new Allocator(parent, taken));
+  }
+
+  allocateIP(subnetName: string): IPv4 | null {
+    const allocator = this.allocators.get(subnetName);
+    return allocator?.allocateNext() || null;
+  }
+
+  getUtilization(subnetName: string): number {
+    const allocator = this.allocators.get(subnetName);
+    return allocator?.utilization() || 0;
+  }
+
+  findFreeBlocks(subnetName: string, minPrefix = 24) {
+    const allocator = this.allocators.get(subnetName);
+    return allocator?.freeBlocks({ minPrefix }) || [];
+  }
+}
+
+// Usage
+const ipam = new IPAMSystem();
+ipam.addSubnet("web-servers", "10.0.1.0/24", ["10.0.1.1/32", "10.0.1.2/32"]);
+ipam.addSubnet("database", "10.0.2.0/24");
+
+const webIP = ipam.allocateIP("web-servers");
+console.log(`Allocated web server IP: ${webIP?.toString()}`);
+
+console.log(`Web subnet utilization: ${(ipam.getUtilization("web-servers") * 100).toFixed(1)}%`);
+
+const freeBlocks = ipam.findFreeBlocks("database", 25);
+console.log(`Available /25 blocks in database subnet: ${freeBlocks.length}`);
+```
+
+### Routing Table Implementation
+
+```typescript
+import { RadixTrie, CIDR, IPv4 } from "ip-toolkit";
+
+interface RouteInfo {
+  interface: string;
+  gateway?: string;
+  metric: number;
+}
+
+class RoutingTable {
+  private ipv4Routes: RadixTrie<4, RouteInfo> = new RadixTrie(4);
+
+  addRoute(cidrStr: string, info: RouteInfo) {
+    const cidr = CIDR.parse(cidrStr);
+    if (cidr.version === 4) {
+      this.ipv4Routes.insert(cidr as CIDR<4>, info);
+    }
+  }
+
+  lookupRoute(destination: string): RouteInfo | null {
+    const ip = IPv4.parse(destination);
+    const result = this.ipv4Routes.longestMatch(ip);
+    return result?.value || null;
+  }
+
+  getAllRoutes(): Array<{ cidr: string; info: RouteInfo }> {
+    const routes: Array<{ cidr: string; info: RouteInfo }> = [];
+
+    for (const cidr of this.ipv4Routes.getCIDRs()) {
+      const result = this.ipv4Routes.longestMatch(cidr.network() as IPv4);
+      if (result?.value) {
+        routes.push({ cidr: cidr.toString(), info: result.value });
+      }
+    }
+
+    return routes;
+  }
+}
+
+// Usage
+const routing = new RoutingTable();
+routing.addRoute("0.0.0.0/0", { interface: "eth0", gateway: "192.168.1.1", metric: 100 });
+routing.addRoute("192.168.1.0/24", { interface: "eth1", metric: 10 });
+routing.addRoute("10.0.0.0/8", { interface: "eth2", metric: 20 });
+
+const route = routing.lookupRoute("192.168.1.50");
+console.log(`Route to 192.168.1.50: ${route?.interface} (metric: ${route?.metric})`);
+
+const allRoutes = routing.getAllRoutes();
+console.log("All routes:", allRoutes);
 ```
 
 ## Caveats and Design Decisions
@@ -332,6 +599,9 @@ pnpm typecheck
 
 # Development build with watch
 pnpm dev
+
+# Run examples
+node examples/basic.js
 ```
 
 ### Project Structure
@@ -346,12 +616,23 @@ src/
 ├── domain/         # Domain models
 │   ├── ip.ts       # IP address classes
 │   ├── cidr.ts     # CIDR classes
-│   └── range.ts    # IP range classes
+│   ├── range.ts    # IP range classes
+│   ├── rangeset.ts # IP range set operations
+│   ├── allocator.ts # IP address allocation
+│   └── trie.ts     # Radix trie for LPM
 └── index.ts        # Public exports
 
-tests/              # Test files
+tests/              # Test files (106+ tests)
 ├── core/
+│   ├── bigint.test.ts
+│   └── ...
 └── domain/
+    ├── ip.test.ts
+    ├── cidr.test.ts
+    ├── range.test.ts
+    ├── rangeset.test.ts
+    ├── allocator.test.ts
+    └── trie.test.ts
 ```
 
 ## Contributing
@@ -364,9 +645,11 @@ MIT
 
 ## Roadmap
 
-- [ ] Advanced range set operations (union, intersect, subtract)
-- [ ] IP allocation and free block finding
-- [ ] Radix trie for longest-prefix matching
+- [x] **Advanced range set operations** (union, intersect, subtract) ✅
+- [x] **IP allocation and free block finding** ✅
+- [x] **Radix trie for longest-prefix matching** ✅
 - [ ] Performance benchmarks
 - [ ] WASM backend for high-performance operations
 - [ ] CLI tool for common operations
+- [ ] ASN/Geo lookups
+- [ ] Database integration adapters

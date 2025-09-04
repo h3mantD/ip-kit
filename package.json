@@ -1,7 +1,7 @@
 {
   "name": "ip-toolkit",
   "version": "0.1.0-alpha",
-  "description": "TypeScript IP Toolkit for IPv4/IPv6 math, CIDR operations, ranges, allocation, and trie lookups",
+  "description": "Production-ready TypeScript IP Toolkit for IPv4/IPv6 math, CIDR operations, ranges, allocation, and trie lookups with 106+ tests",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",

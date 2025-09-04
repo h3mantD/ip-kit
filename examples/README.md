@@ -1,0 +1,69 @@
+# IP Toolkit Examples
+
+This directory contains examples demonstrating the various features of the IP Toolkit.
+
+## Running Examples
+
+### Prerequisites
+
+Make sure you have built the library:
+
+```bash
+npm run build
+```
+
+### JavaScript Examples
+
+Run the JavaScript examples using Node.js:
+
+```bash
+# Basic functionality demo
+node examples/basic.js
+```
+
+### TypeScript Examples
+
+For TypeScript examples, you'll need `tsx` or `ts-node`:
+
+```bash
+# Install tsx globally (recommended)
+npm install -g tsx
+
+# Or install ts-node
+npm install -g ts-node
+
+# Run TypeScript examples
+npx tsx examples/basic.ts
+```
+
+## Example Categories
+
+### Basic Operations
+- IP address parsing and formatting
+- CIDR network calculations
+- IP range operations
+
+### Advanced Features
+- Range set operations (union, intersect, subtract)
+- IP address allocation and management
+- Longest prefix matching with radix trie
+
+### Real-world Use Cases
+- IPAM (IP Address Management) system
+- Routing table implementation
+- Network planning and analysis
+
+## Example Files
+
+- `basic.js` / `basic.ts` - Comprehensive demo of all features
+- More examples coming soon...
+
+## Contributing
+
+Feel free to add more examples! Follow these guidelines:
+
+1. Include both JavaScript (`.js`) and TypeScript (`.ts`) versions
+2. Add clear comments explaining each step
+3. Demonstrate practical use cases
+4. Keep examples focused and concise
+5. Update this README when adding new examples
