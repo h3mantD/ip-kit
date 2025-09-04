@@ -2,14 +2,14 @@
 
 TypeScript IP Toolkit for IPv4/IPv6 math, CIDR operations, ranges, allocation, and trie lookups.
 
-[![npm version](https://badge.fury.io/js/ip-toolkit.svg)](https://badge.fury.io/js/ip-toolkit)
-[![Node.js CI](https://github.com/h3mantD/ip-toolkit/actions/workflows/ci.yml/badge.svg)](https://github.com/h3mantD/ip-toolkit/actions/workflows/ci.yml)
-[![Coverage](https://coveralls.io/repos/github/h3mantD/ip-toolkit/badge.svg)](https://coveralls.io/github/h3mantD/ip-toolkit)
+[![npm version](https://badge.fury.io/js/ip-kit.svg)](https://badge.fury.io/js/ip-kit)
+[![Node.js CI](https://github.com/h3mantD/ip-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/h3mantD/ip-kit/actions/workflows/ci.yml)
+[![Coverage](https://coveralls.io/repos/github/h3mantD/ip-kit/badge.svg)](https://coveralls.io/github/h3mantD/ip-kit)
 
 ## Quick Start
 
 ```typescript
-import { ip, cidr, IPv4, CIDR } from "ip-toolkit";
+import { ip, cidr, IPv4, CIDR } from "ip-kit";
 
 // Parse IPs
 const ipv4 = ip("192.168.1.1");
@@ -49,20 +49,20 @@ console.log(subnets.length); // 4
 
 ```bash
 # Using npm
-npm install ip-toolkit
+npm install ip-kit
 
 # Using pnpm
-pnpm add ip-toolkit
+pnpm add ip-kit
 
 # Using yarn
-yarn add ip-toolkit
+yarn add ip-kit
 ```
 
 ### Build from Source
 
 ```bash
-git clone https://github.com/h3mantD/ip-toolkit.git
-cd ip-toolkit
+git clone https://github.com/h3mantD/ip-kit.git
+cd ip-kit
 npm install
 npm run build
 ```
@@ -263,7 +263,7 @@ class RadixTrie<V extends IPVersion = IPVersion, T = unknown> {
 ### IPv4 Operations
 
 ```typescript
-import { IPv4, CIDR } from "ip-toolkit";
+import { IPv4, CIDR } from "ip-kit";
 
 // Parse different formats
 const ip1 = IPv4.parse("192.168.1.1");
@@ -294,7 +294,7 @@ console.log(subnets.map((s) => s.toString()));
 ### IPv6 Operations
 
 ```typescript
-import { IPv6, CIDR } from "ip-toolkit";
+import { IPv6, CIDR } from "ip-kit";
 
 // Parse with compression
 const ip = IPv6.parse("2001:0db8:0000:0000:0000:0000:0000:0001");
@@ -312,7 +312,7 @@ console.log(hosts.length); // Very large, use with limit
 ### IP Ranges
 
 ```typescript
-import { IPRange, IPv4 } from "ip-toolkit";
+import { IPRange, IPv4 } from "ip-kit";
 
 // Parse range
 const range = IPRange.parse("192.168.1.10 - 192.168.1.20");
@@ -334,7 +334,7 @@ console.log(cidrs.map((c) => c.toString()));
 ### Range Set Operations
 
 ```typescript
-import { RangeSet, CIDR, IPv4 } from "ip-toolkit";
+import { RangeSet, CIDR, IPv4 } from "ip-kit";
 
 // Create range sets from CIDRs
 const set1 = RangeSet.fromCIDRs(["192.168.1.0/25", "192.168.2.0/24"]);
@@ -365,7 +365,7 @@ console.log(minimalCIDRs.map(c => c.toString()));
 ### IP Address Allocation
 
 ```typescript
-import { Allocator, CIDR, IPv4 } from "ip-toolkit";
+import { Allocator, CIDR, IPv4 } from "ip-kit";
 
 // Create allocator for a /24 network
 const parent = CIDR.parse("192.168.1.0/24");
@@ -401,7 +401,7 @@ console.log(`Available IPs: ${allocator.availableCount()}`);
 ### Longest-Prefix Matching (Routing)
 
 ```typescript
-import { RadixTrie, CIDR, IPv4 } from "ip-toolkit";
+import { RadixTrie, CIDR, IPv4 } from "ip-kit";
 
 // Create routing table
 const routingTable = new RadixTrie<4, string>(4);
@@ -434,7 +434,7 @@ console.log(`Total routes: ${routingTable.size()}`);
 ### Error Handling
 
 ```typescript
-import { IPv4, CIDR, ParseError } from "ip-toolkit";
+import { IPv4, CIDR, ParseError } from "ip-kit";
 
 try {
   const ip = IPv4.parse("256.1.1.1"); // Invalid
@@ -456,7 +456,7 @@ try {
 ### IPAM (IP Address Management) System
 
 ```typescript
-import { Allocator, RangeSet, CIDR, IPv4 } from "ip-toolkit";
+import { Allocator, RangeSet, CIDR, IPv4 } from "ip-kit";
 
 // Simulate IPAM for a data center
 class IPAMSystem {
@@ -501,7 +501,7 @@ console.log(`Available /25 blocks in database subnet: ${freeBlocks.length}`);
 ### Routing Table Implementation
 
 ```typescript
-import { RadixTrie, CIDR, IPv4 } from "ip-toolkit";
+import { RadixTrie, CIDR, IPv4 } from "ip-kit";
 
 interface RouteInfo {
   interface: string;
@@ -571,8 +571,8 @@ console.log("All routes:", allRoutes);
 ### Setup
 
 ```bash
-git clone https://github.com/h3mantD/ip-toolkit.git
-cd ip-toolkit
+git clone https://github.com/h3mantD/ip-kit.git
+cd ip-kit
 pnpm install
 ```
 

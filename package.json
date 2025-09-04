@@ -1,5 +1,5 @@
 {
-  "name": "ip-toolkit",
+  "name": "ip-kit",
   "version": "0.1.0-alpha",
   "description": "Production-ready TypeScript IP Toolkit for IPv4/IPv6 math, CIDR operations, ranges, allocation, and trie lookups with 106+ tests",
   "type": "module",
@@ -38,7 +38,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/h3mantD/ip-toolkit.git"
+    "url": "git+https://github.com/h3mantD/ip-kit.git"
   },
   "keywords": [
     "ip",
@@ -54,7 +54,7 @@
   "author": "h3mantd",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/h3mantD/ip-toolkit/issues"
+    "url": "https://github.com/h3mantD/ip-kit/issues"
   },
-  "homepage": "https://github.com/h3mantD/ip-toolkit#readme"
+  "homepage": "https://github.com/h3mantD/ip-kit#readme"
 }

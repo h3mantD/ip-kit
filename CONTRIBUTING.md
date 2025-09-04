@@ -36,8 +36,8 @@ This project follows a code of conduct to ensure a welcoming environment for all
 
 ```bash
 # Fork and clone the repository
-git clone https://github.com/h3mantD/ip-toolkit.git
-cd ip-toolkit
+git clone https://github.com/h3mantD/ip-kit.git
+cd ip-kit
 
 # Install dependencies
 pnpm install
@@ -69,8 +69,8 @@ pnpm build
 
 3. **Clone and setup**
    ```bash
-   git clone https://github.com/h3mantD/ip-toolkit.git
-   cd ip-toolkit
+   git clone https://github.com/h3mantD/ip-kit.git
+   cd ip-kit
    pnpm install
    ```
 
@@ -97,7 +97,7 @@ pnpm ci           # Run all CI checks (lint, typecheck, test, build)
 ## Project Structure
 
 ```
-ip-toolkit/
+ip-kit/
 ├── src/                    # Source code
 │   ├── core/              # Core utilities
 │   │   ├── bigint.ts      # BigInt math operations
@@ -134,7 +134,7 @@ ip-toolkit/
 
 ### 1. Choose an Issue
 
-- Check [GitHub Issues](https://github.com/h3mantD/ip-toolkit/issues) for open tasks
+- Check [GitHub Issues](https://github.com/h3mantD/ip-kit/issues) for open tasks
 - Look for issues labeled `good first issue` or `help wanted`
 - Comment on the issue to indicate you're working on it
 
