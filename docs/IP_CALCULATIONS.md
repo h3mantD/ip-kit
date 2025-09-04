@@ -121,14 +121,14 @@ graph TD
     A["192.168.1.100/24"] --> B["Parse IP: 192.168.1.100"]
     A --> C["Parse Prefix: 24"]
     B --> D["Convert to BigInt: 3232235876n"]
-    C --> E["Generate Prefix Mask: 0xFFFFFF00"]
+    C --> E["Generate Prefix Mask: 0xFFFFFF00n"]
     D --> F[Calculate Network]
     E --> F
     F --> G["Network = IP & Mask = 3232235776n"]
     G --> H["Format: 192.168.1.0"]
 
     G --> I[Calculate Broadcast]
-    E --> J["Generate Host Mask: 0x000000FF"]
+    E --> J["Generate Host Mask: 0x000000FFn"]
     I --> K["Broadcast = Network | HostMask"]
     J --> K
     K --> L["Broadcast = 3232236031n"]
@@ -217,6 +217,12 @@ function normalizeIPv6(groups: number[]): string {
       currentZeroStart = -1;
       currentZeroLength = 0;
     }
+  }
+
+  // Handle final zero run
+  if (currentZeroLength > maxZeroLength) {
+    maxZeroStart = currentZeroStart;
+    maxZeroLength = currentZeroLength;
   }
 
   // Compress if run is 2 or more consecutive zeros
@@ -315,16 +321,21 @@ graph TD
     E --> F["Remaining: 192.168.1.12 - 192.168.1.20"]
     F --> G["Block 2: 192.168.1.12/30 covers 12-15"]
     G --> H["Remaining: 192.168.1.16 - 192.168.1.20"]
-    H --> I["Block 3: 192.168.1.16/30 covers 16-19"]
-    I --> J["Remaining: 192.168.1.20/32"]
-    J --> K["Final: 4 CIDR blocks total"]
+    H --> I["Block 3: 192.168.1.16/29 covers 16-23"]
+    I --> J["Adjust: 192.168.1.16/30 covers 16-19"]
+    J --> K["Remaining: 192.168.1.20/32"]
+    K --> L["Final: 4 CIDR blocks total"]
 ```
 
 ### Algorithm
 
 ```typescript
-function rangeToCIDRs(start: bigint, end: bigint, bits: number): bigint[] {
-  const cidrs: bigint[] = [];
+function rangeToCIDRs(
+  start: bigint,
+  end: bigint,
+  bits: number
+): Array<{ network: bigint; prefix: number }> {
+  const cidrs: Array<{ network: bigint; prefix: number }> = [];
   let current = start;
 
   while (current <= end) {
@@ -360,7 +371,7 @@ function maxAlignedBlock(
     if (network === start && start + blockSize - 1n <= end) {
       return { network, prefix };
     }
-    prefix--;
+    prefix++;
   }
 
   return { network: start, prefix: bits };
@@ -441,8 +452,8 @@ Special attention is paid to boundary conditions:
 // Input: 192.168.1.100/24
 const ip = parseIPv4String('192.168.1.100'); // 3232235876n
 const prefix = 24;
-const prefixMask = 0xffffff00n; // /24 mask
-const network = ip & prefixMask; // 3232235776n
+const prefixMaskValue = 0xffffff00n; // /24 mask (4294967040n)
+const network = ip & prefixMaskValue; // 3232235776n
 const networkStr = formatIPv4(network); // "192.168.1.0"
 ```
 
@@ -458,10 +469,13 @@ const groups = [0x2001, 0x0db8, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0001];
 ### Example 3: Range to CIDR Conversion
 
 ```typescript
-// Input: 192.168.1.10 - 192.168.1.13
-// Start: 3232235786n, End: 3232235789n
-// Result: [192.168.1.10/31, 192.168.1.12/30]
-// Covers: [10,11] and [12,13,14,15] but limited to [12,13]
+// Input: 192.168.1.10 - 192.168.1.20
+// Start: 3232235786n (192.168.1.10), End: 3232235796n (192.168.1.20)
+// Result CIDRs:
+// 1. 192.168.1.10/31 covers 192.168.1.10-11
+// 2. 192.168.1.12/30 covers 192.168.1.12-15
+// 3. 192.168.1.16/30 covers 192.168.1.16-19
+// 4. 192.168.1.20/32 covers 192.168.1.20
 ```
 
 This mathematical foundation ensures that all IP operations in the toolkit are precise, efficient, and handle edge cases correctly, providing a reliable base for network management and analysis tools.
