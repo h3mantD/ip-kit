@@ -34,7 +34,7 @@ export class Allocator<V extends IPVersion = IPVersion> {
    * Find the next available IP address starting from the given IP.
    */
   nextAvailable(from?: IP<V>): IP<V> | null {
-    const startIp = from || this.parent.firstHost();
+    const startIp = from || this.parent.firstHost({ includeEdges: false });
 
     // If the start IP is already taken, find the next one
     if (this._taken.contains(startIp as IP<V>)) {
