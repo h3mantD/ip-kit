@@ -26,7 +26,7 @@ export class RangeSet<V extends IPVersion = IPVersion> {
    * Create a RangeSet from CIDR blocks.
    */
   static fromCIDRs<V extends IPVersion>(cidrs: Array<CIDR<V> | string>): RangeSet<V> {
-  if (!cidrs || cidrs.length === 0) return new RangeSet([]);
+    if (!cidrs || cidrs.length === 0) return new RangeSet([]);
     const ranges: IPRange<V>[] = [];
     let version: V | undefined;
     for (const cidr of cidrs) {

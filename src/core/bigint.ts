@@ -32,7 +32,7 @@ export function hostMask(prefix: number, bits: 32 | 128): bigint {
     throw new OutOfRangeError(`bits must be 32 or 128, got ${bits}`);
   }
   const mask = bits === 32 ? MAX4 : MAX6;
-  return (~prefixMask(prefix, bits)) & mask;
+  return ~prefixMask(prefix, bits) & mask;
 }
 
 /**

@@ -92,8 +92,8 @@ export class Allocator<V extends IPVersion = IPVersion> {
       return false;
     }
 
-  const range = cidr.toRange();
-  const newTakenRanges = [...this._taken.toArray(), range];
+    const range = cidr.toRange();
+    const newTakenRanges = [...this._taken.toArray(), range];
     this._taken = RangeSet.fromRanges(newTakenRanges);
     return true;
   }
@@ -169,7 +169,9 @@ export class Allocator<V extends IPVersion = IPVersion> {
       if (end < fromVal) continue;
       const candidate = start >= fromVal ? start : fromVal + 1n;
       if (candidate <= end) {
-        return this.version === 4 ? (IPv4.fromBigInt(candidate) as IP<V>) : (IPv6.fromBigInt(candidate) as IP<V>);
+        return this.version === 4
+          ? (IPv4.fromBigInt(candidate) as IP<V>)
+          : (IPv6.fromBigInt(candidate) as IP<V>);
       }
     }
 
@@ -193,7 +195,7 @@ export class Allocator<V extends IPVersion = IPVersion> {
   private getFreeRanges(): IPRange<V>[] {
     const parentRange = this.parent.toRange();
     const parentRangeSet = RangeSet.fromRanges([parentRange]);
-  const freeSet = parentRangeSet.subtract(this._taken);
-  return freeSet.toArray();
+    const freeSet = parentRangeSet.subtract(this._taken);
+    return freeSet.toArray();
   }
 }

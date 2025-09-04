@@ -49,9 +49,9 @@ export class RadixTrie<V extends IPVersion = IPVersion, T = unknown> {
       }
       node = node.children.get(bit)!;
     }
-  node.value = value;
-  node.storedPrefix = cidr.prefix;
-  node.network = cidr.network().toBigInt();
+    node.value = value;
+    node.storedPrefix = cidr.prefix;
+    node.network = cidr.network().toBigInt();
     return this;
   }
 
@@ -79,9 +79,9 @@ export class RadixTrie<V extends IPVersion = IPVersion, T = unknown> {
     }
 
     // Remove the value
-  delete node.value;
-  delete node.storedPrefix;
-  delete node.network;
+    delete node.value;
+    delete node.storedPrefix;
+    delete node.network;
 
     // Clean up empty nodes
     for (let i = path.length - 1; i >= 0; i--) {
@@ -166,7 +166,8 @@ export class RadixTrie<V extends IPVersion = IPVersion, T = unknown> {
   private reconstructCIDR(ip: IP<V>, node: TrieNode<T>): CIDR<V> {
     const prefixLength = node.storedPrefix!;
     if (node.network !== undefined) {
-      const networkIP = ip.version === 4 ? IPv4.fromBigInt(node.network) : IPv6.fromBigInt(node.network);
+      const networkIP =
+        ip.version === 4 ? IPv4.fromBigInt(node.network) : IPv6.fromBigInt(node.network);
       if (this.version === 4) {
         return CIDR.from(networkIP as IPv4, prefixLength) as CIDR<V>;
       } else {
@@ -178,7 +179,8 @@ export class RadixTrie<V extends IPVersion = IPVersion, T = unknown> {
     const bits = ip.version === 4 ? 32 : 128;
     const mask = (1n << BigInt(bits - prefixLength)) - 1n;
     const networkValue = ip.toBigInt() & ~mask;
-    const networkIP = ip.version === 4 ? IPv4.fromBigInt(networkValue) : IPv6.fromBigInt(networkValue);
+    const networkIP =
+      ip.version === 4 ? IPv4.fromBigInt(networkValue) : IPv6.fromBigInt(networkValue);
     if (ip.version === 4) {
       return CIDR.from(networkIP as IPv4, prefixLength) as CIDR<V>;
     } else {
@@ -195,14 +197,16 @@ export class RadixTrie<V extends IPVersion = IPVersion, T = unknown> {
     if (node.value !== undefined) {
       const prefixLength = node.storedPrefix!;
       if (node.network !== undefined) {
-        const networkIP = this.version === 4 ? IPv4.fromBigInt(node.network) : IPv6.fromBigInt(node.network);
+        const networkIP =
+          this.version === 4 ? IPv4.fromBigInt(node.network) : IPv6.fromBigInt(node.network);
         if (this.version === 4) {
           result.push(CIDR.from(networkIP as IPv4, prefixLength) as CIDR<V>);
         } else {
           result.push(CIDR.from(networkIP as IPv6, prefixLength) as CIDR<V>);
         }
       } else {
-        const networkIP = this.version === 4 ? IPv4.fromBigInt(currentValue) : IPv6.fromBigInt(currentValue);
+        const networkIP =
+          this.version === 4 ? IPv4.fromBigInt(currentValue) : IPv6.fromBigInt(currentValue);
         if (this.version === 4) {
           result.push(CIDR.from(networkIP as IPv4, prefixLength) as CIDR<V>);
         } else {

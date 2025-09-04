@@ -48,16 +48,18 @@ export function ptrZonesForCIDR(ip: bigint, prefix: number, bits: 32 | 128): str
     return [ptrV4(network)];
   } else {
     // IPv6: nibble-aligned zones. Round prefix down to a multiple of 4
-  const nibblePrefix = Math.floor(prefix / 4) * 4;
-  const zonePrefix = Math.min(nibblePrefix, 124); // up to /124 usually
+    const nibblePrefix = Math.floor(prefix / 4) * 4;
+    const zonePrefix = Math.min(nibblePrefix, 124); // up to /124 usually
     // Build nibbles for the network and truncate to zonePrefix nibbles
     const nibbles: string[] = [];
     for (let i = 0; i < 32; i++) {
       const nib = Number((ip >> BigInt((31 - i) * 4)) & 0xfn);
       nibbles.push(nib.toString(16));
     }
-  const usedNibbles = Math.floor(zonePrefix / 4); // number of nibbles covered by zonePrefix
-  const zone = (usedNibbles === 0 ? '' : nibbles.slice(0, usedNibbles).reverse().join('.') + '.') + 'ip6.arpa';
+    const usedNibbles = Math.floor(zonePrefix / 4); // number of nibbles covered by zonePrefix
+    const zone =
+      (usedNibbles === 0 ? '' : nibbles.slice(0, usedNibbles).reverse().join('.') + '.') +
+      'ip6.arpa';
     return [zone];
   }
 }
