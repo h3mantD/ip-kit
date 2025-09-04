@@ -16,11 +16,30 @@ export function ip(input: string | number | bigint | Uint8Array): IPv4 | IPv6 {
     if (IP.isIPv4(input)) return IPv4.parse(input);
     if (IP.isIPv6(input)) return IPv6.parse(input);
   }
-  // For other types, try IPv4 first
+  // For other types, handle by runtime type
+  if (typeof input === 'number') {
+    return IPv4.parse(input);
+  }
+  if (typeof input === 'bigint') {
+    try {
+      return IPv4.parse(input);
+    } catch {
+      return IPv6.parse(input);
+    }
+  }
+  if (input instanceof Uint8Array) {
+    // try IPv4 bytes first
+    try {
+      return IPv4.parse(input);
+    } catch {
+      return IPv6.parse(input);
+    }
+  }
+  // Fallback: attempt IPv4 then IPv6
   try {
-    return IPv4.parse(input as any);
+    return IPv4.parse(input as unknown as string | number | bigint | Uint8Array);
   } catch {
-    return IPv6.parse(input as any);
+    return IPv6.parse(input as unknown as string | bigint | Uint8Array);
   }
 }
 

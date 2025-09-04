@@ -25,6 +25,14 @@ console.log(`Broadcast: ${cidr.broadcast().toString()}`);
 console.log(`Size: ${cidr.size()} addresses`);
 console.log(`Contains 192.168.1.50: ${cidr.contains(IPv4.parse('192.168.1.50'))}\n`);
 
+// Subnetting (generator example)
+console.log('4a. Subnetting /24 into /26 subnets (generator):');
+let idx = 0;
+for (const s of cidr.subnets(26)) {
+	console.log(`Subnet ${++idx}: ${s.toString()}`);
+}
+console.log();
+
 // Range operations
 console.log('3. IP Range Operations:');
 const range = IPRange.parse('192.168.1.10 - 192.168.1.20');
@@ -54,6 +62,11 @@ console.log(`Allocated IP: ${allocatedIP?.toString()}`);
 console.log(`Available IPs: ${allocator.availableCount()}`);
 console.log(`Utilization: ${(allocator.utilization() * 100).toFixed(1)}%`);
 console.log(`Free /25 blocks: ${freeBlocks.length}\n`);
+
+// Demonstrate first/last host semantics for the parent CIDR
+console.log('First host (default):', parent.firstHost().toString());
+console.log('Last host (default):', parent.lastHost().toString());
+console.log('First host (includeEdges=true):', parent.firstHost({ includeEdges: true }).toString());
 
 // Longest prefix matching
 console.log('6. Longest Prefix Matching:');

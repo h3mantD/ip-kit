@@ -4,7 +4,7 @@
 
 import { IP, IPv4, IPv6, IPVersion } from './ip';
 import { IPRange } from './range';
-import { ParseError } from '../core/errors';
+import { ParseError, InvariantError } from '../core/errors';
 import { networkOf, broadcastOf, prefixMask } from '../core/bigint';
 import { ptrZonesForCIDR } from '../core/ptr';
 
@@ -79,7 +79,7 @@ export class CIDR<V extends IPVersion = IPVersion> {
 
   broadcast(): IPv4 {
     if (this.version === 6) {
-      throw new Error('Broadcast not supported for IPv6');
+      throw new InvariantError('Broadcast not supported for IPv6');
     }
     const bcValue = broadcastOf(this.ip.toBigInt(), this.prefix, 32);
     return IPv4.fromBigInt(bcValue);
@@ -92,7 +92,7 @@ export class CIDR<V extends IPVersion = IPVersion> {
   firstHost(opts?: { includeEdges?: boolean }): typeof this.ip {
     const includeEdges = opts?.includeEdges ?? this.prefix >= (this.version === 4 ? 31 : 127);
     if (!includeEdges && this.prefix >= (this.version === 4 ? 31 : 127)) {
-      throw new Error('No hosts available');
+      throw new InvariantError('No hosts available');
     }
     const net = this.network().toBigInt();
     const first = includeEdges ? net : net + 1n;
@@ -106,7 +106,7 @@ export class CIDR<V extends IPVersion = IPVersion> {
   lastHost(opts?: { includeEdges?: boolean }): typeof this.ip {
     const includeEdges = opts?.includeEdges ?? (this.version === 6 || this.prefix >= 31);
     if (!includeEdges && this.prefix >= (this.version === 4 ? 31 : 127)) {
-      throw new Error('No hosts available');
+      throw new InvariantError('No hosts available');
     }
     const bc =
       this.version === 4
@@ -158,21 +158,41 @@ export class CIDR<V extends IPVersion = IPVersion> {
 
   *subnets(newPrefix: number): Generator<CIDR<V>, void, unknown> {
     if (newPrefix <= this.prefix) {
-      throw new Error('New prefix must be greater than current prefix');
+      throw new InvariantError('New prefix must be greater than current prefix');
     }
-    const subnetsPer = 1 << (newPrefix - this.prefix);
+    if (newPrefix > this.bits()) {
+      throw new InvariantError('New prefix exceeds address size');
+    }
+    const diff = newPrefix - this.prefix;
+    const count = 1n << BigInt(diff);
     const net = this.network().toBigInt();
     const step = 1n << BigInt(this.bits() - newPrefix);
-    for (let i = 0; i < subnetsPer; i++) {
-      const subnetNet = net + BigInt(i) * step;
-      const ip = this.version === 4 ? IPv4.fromBigInt(subnetNet) : IPv6.fromBigInt(subnetNet);
-      yield CIDR.from(ip as any, newPrefix) as CIDR<V>;
+    for (let i = 0n; i < count; i++) {
+      const subnetNet = net + i * step;
+      if (this.version === 4) {
+        const ip = IPv4.fromBigInt(subnetNet);
+        yield CIDR.from(ip, newPrefix) as CIDR<V>;
+      } else {
+        const ip = IPv6.fromBigInt(subnetNet);
+        yield CIDR.from(ip, newPrefix) as CIDR<V>;
+      }
     }
   }
 
   split(parts: number): CIDR<V>[] {
     if (parts <= 1) return [this];
-    const newPrefix = this.prefix + Math.ceil(Math.log2(parts));
+    if (parts <= 0) throw new InvariantError('parts must be > 0');
+    // compute smallest power-of-two >= parts using BigInt to avoid JS number limits
+    let power = 1n;
+    let bits = 0;
+    while (power < BigInt(parts)) {
+      power <<= 1n;
+      bits += 1;
+    }
+    const newPrefix = this.prefix + bits;
+    if (newPrefix > this.bits()) {
+      throw new InvariantError('Cannot split beyond address space');
+    }
     const subnets = Array.from(this.subnets(newPrefix));
     return subnets.slice(0, parts);
   }
@@ -181,14 +201,23 @@ export class CIDR<V extends IPVersion = IPVersion> {
     const currentNet = this.network().toBigInt();
     const step = 1n << BigInt(this.bits() - this.prefix);
     const newNet = currentNet + BigInt(n) * step;
-    const ip = this.version === 4 ? IPv4.fromBigInt(newNet) : IPv6.fromBigInt(newNet);
-    return CIDR.from(ip as any, this.prefix) as CIDR<V>;
+    if (this.version === 4) {
+      const ip = IPv4.fromBigInt(newNet);
+      return CIDR.from(ip, this.prefix) as CIDR<V>;
+    } else {
+      const ip = IPv6.fromBigInt(newNet);
+      return CIDR.from(ip, this.prefix) as CIDR<V>;
+    }
   }
 
   toRange(): IPRange<V> {
     const start = this.firstHost({ includeEdges: true });
     const end = this.lastHost({ includeEdges: true });
-    return IPRange.from(start as any, end as any) as IPRange<V>;
+    if (this.version === 4) {
+      return IPRange.from(start as IPv4, end as IPv4) as IPRange<V>;
+    } else {
+      return IPRange.from(start as IPv6, end as IPv6) as IPRange<V>;
+    }
   }
 
   toPtr(): string[] {

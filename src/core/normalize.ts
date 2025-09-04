@@ -1,6 +1,7 @@
 /**
  * IPv6 normalization utilities per RFC 5952.
  */
+import { ParseError } from './errors';
 
 /**
  * Finds the start and length of the longest zero run (at least 2 zeros).
@@ -30,14 +31,17 @@ function findLongestZeroRun(groups: number[]): { start: number; len: number } | 
  */
 export function normalizeV6Groups(groups: number[]): { text: string; mappedV4?: string } {
   if (groups.length !== 8) {
-    throw new Error('IPv6 must have 8 groups');
+    throw new ParseError('IPv6 must have 8 groups');
   }
 
-  // Check for v4-mapped
+  // Check for v4-mapped: ::ffff:w.x.y.z -> groups[0..4]==0 and groups[5]==0xffff
   let mappedV4: string | undefined;
-  if (groups.slice(0, 6).every((g) => g === 0) && groups[6] === 0xffff) {
-    const v4 = ((groups[6] & 0xffff) << 16) | (groups[7] & 0xffff);
-    mappedV4 = `${(v4 >>> 24) & 0xff}.${(v4 >>> 16) & 0xff}.${(v4 >>> 8) & 0xff}.${v4 & 0xff}`;
+  if (groups.slice(0, 5).every((g) => g === 0) && groups[5] === 0xffff) {
+    // last 32 bits are in groups[6] (high 16) and groups[7] (low 16)
+    const high = groups[6] & 0xffff;
+    const low = groups[7] & 0xffff;
+    const v4num = (high << 16) | low;
+    mappedV4 = `${(v4num >>> 24) & 0xff}.${(v4num >>> 16) & 0xff}.${(v4num >>> 8) & 0xff}.${v4num & 0xff}`;
   }
 
   const zeroRun = findLongestZeroRun(groups);

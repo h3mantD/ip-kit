@@ -97,25 +97,48 @@ export class IPRange<V extends IPVersion = IPVersion> {
   }
 
   toCIDRs(): CIDR<V>[] {
-    // Simple implementation: return a single CIDR if possible, else multiple
-    // For now, just return the minimal CIDR that covers the range
-    // This is a placeholder; full implementation would find minimal cover
     const start = this.start.toBigInt();
     const end = this.end.toBigInt();
-    const size = end - start + 1n;
-    // Find the largest power of 2 that fits
-    let prefix = 0;
-    let blockSize = 1n;
-    while (blockSize * 2n <= size) {
-      blockSize *= 2n;
-      prefix++;
-    }
     const bits = this.version === 4 ? 32 : 128;
-    const cidrPrefix = bits - prefix;
-    // Align start to the block
-    const alignedStart = (start / blockSize) * blockSize;
-    const ip = this.version === 4 ? IPv4.fromBigInt(alignedStart) : IPv6.fromBigInt(alignedStart);
-    return [CIDR.from(ip as any, cidrPrefix) as CIDR<V>];
+    const result: CIDR<V>[] = [];
+
+    let cur = start;
+    while (cur <= end) {
+      // Find largest power-of-two block aligned at cur
+      // Compute number of trailing zero bits in cur
+      let maxAlign = 0n;
+      if (cur === 0n) {
+        maxAlign = BigInt(bits);
+      } else {
+        let tmp = cur;
+        while ((tmp & 1n) === 0n && maxAlign < BigInt(bits)) {
+          tmp >>= 1n;
+          maxAlign++;
+        }
+      }
+
+      // Block size from alignment
+      let blockSize = 1n << maxAlign;
+
+      // Shrink blockSize until it fits within remaining range
+      const remaining = end - cur + 1n;
+      while (blockSize > remaining) {
+        blockSize >>= 1n;
+        maxAlign--;
+      }
+
+      const prefix = Number(BigInt(bits) - maxAlign);
+      const ip = this.version === 4 ? IPv4.fromBigInt(cur) : IPv6.fromBigInt(cur);
+      if (this.version === 4) {
+        result.push(CIDR.from(ip as IPv4, prefix) as CIDR<V>);
+      } else {
+        result.push(CIDR.from(ip as IPv6, prefix) as CIDR<V>);
+      }
+
+      cur += blockSize;
+    }
+
+    return result;
   }
 
   toString(): string {

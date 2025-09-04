@@ -9,6 +9,8 @@
 /**
  * Returns the PTR record for an IPv4 address.
  */
+import { prefixMask } from './bigint';
+
 export function ptrV4(ip: bigint): string {
   const octets = [
     Number(ip & 0xffn),
@@ -16,7 +18,8 @@ export function ptrV4(ip: bigint): string {
     Number((ip >> 16n) & 0xffn),
     Number((ip >> 24n) & 0xffn),
   ];
-  return [...octets].reverse().join('.') + '.in-addr.arpa';
+  // Least significant octet first (already in LSB..MSB order)
+  return octets.join('.') + '.in-addr.arpa';
 }
 
 /**
@@ -36,18 +39,25 @@ export function ptrV6(ip: bigint): string {
  */
 export function ptrZonesForCIDR(ip: bigint, prefix: number, bits: 32 | 128): string[] {
   if (bits === 32) {
-    // IPv4: zone is /24 or less
+    // IPv4: prefer /24 zone or the prefix specified
     const zonePrefix = Math.min(prefix, 24);
-    const network = ip & ((1n << BigInt(32 - zonePrefix)) - 1n); // Wait, wrong
-    // Actually, for reverse, the zone is the network part reversed.
-    // But simplified, return the PTR of the network.
+    // Compute network for the zone
+    const zoneMask = prefixMask(zonePrefix, 32);
+    const network = ip & zoneMask;
+    // For an IPv4 zone, ptrV4(network) returns the full reverse; caller can interpret
     return [ptrV4(network)];
   } else {
-    // IPv6: nibble-aligned zones
-    const nibblePrefix = Math.floor(prefix / 4) * 4;
-    const zonePrefix = Math.min(nibblePrefix, 124); // up to /124
-    const network = ip & (((1n << BigInt(128 - zonePrefix)) - 1n) << BigInt(128 - zonePrefix)); // Wait, mask
-    // Simplified
-    return [ptrV6(network)];
+    // IPv6: nibble-aligned zones. Round prefix down to a multiple of 4
+  const nibblePrefix = Math.floor(prefix / 4) * 4;
+  const zonePrefix = Math.min(nibblePrefix, 124); // up to /124 usually
+    // Build nibbles for the network and truncate to zonePrefix nibbles
+    const nibbles: string[] = [];
+    for (let i = 0; i < 32; i++) {
+      const nib = Number((ip >> BigInt((31 - i) * 4)) & 0xfn);
+      nibbles.push(nib.toString(16));
+    }
+  const usedNibbles = Math.floor(zonePrefix / 4); // number of nibbles covered by zonePrefix
+  const zone = (usedNibbles === 0 ? '' : nibbles.slice(0, usedNibbles).reverse().join('.') + '.') + 'ip6.arpa';
+    return [zone];
   }
 }

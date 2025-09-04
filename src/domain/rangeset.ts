@@ -4,6 +4,7 @@
  */
 
 import { IP, IPv4, IPv6, IPVersion } from './ip';
+import { InvariantError } from '../core/errors';
 import { CIDR } from './cidr';
 import { IPRange } from './range';
 
@@ -15,15 +16,27 @@ export class RangeSet<V extends IPVersion = IPVersion> {
   }
 
   /**
+   * Return a shallow copy of internal ranges array.
+   */
+  toArray(): IPRange<V>[] {
+    return [...this.ranges];
+  }
+
+  /**
    * Create a RangeSet from CIDR blocks.
    */
   static fromCIDRs<V extends IPVersion>(cidrs: Array<CIDR<V> | string>): RangeSet<V> {
+  if (!cidrs || cidrs.length === 0) return new RangeSet([]);
     const ranges: IPRange<V>[] = [];
+    let version: V | undefined;
     for (const cidr of cidrs) {
       const cidrObj = typeof cidr === 'string' ? CIDR.parse(cidr) : cidr;
-      if (cidrObj.version === (ranges[0]?.version ?? cidrObj.version)) {
-        ranges.push(cidrObj.toRange() as IPRange<V>);
+      if (version === undefined) {
+        version = cidrObj.version as V;
+      } else if (cidrObj.version !== version) {
+        throw new InvariantError('Mixed IP versions in CIDR list');
       }
+      ranges.push(cidrObj.toRange() as IPRange<V>);
     }
     return new RangeSet(this.normalize(ranges));
   }
@@ -32,6 +45,11 @@ export class RangeSet<V extends IPVersion = IPVersion> {
    * Create a RangeSet from IP ranges.
    */
   static fromRanges<V extends IPVersion>(ranges: Array<IPRange<V>>): RangeSet<V> {
+    if (!ranges || ranges.length === 0) return new RangeSet([]);
+    const version = ranges[0].version;
+    for (const r of ranges) {
+      if (r.version !== version) throw new InvariantError('Mixed IP versions in ranges');
+    }
     return new RangeSet(this.normalize([...ranges]));
   }
 
