@@ -6,6 +6,13 @@ TypeScript IP Toolkit for IPv4/IPv6 math, CIDR operations, ranges, allocation, a
 [![npm version](https://img.shields.io/npm/v/@h3mantd/ip-kit.svg)](https://www.npmjs.com/package/@h3mantd/ip-kit)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
+## Documentation
+
+- **[API Reference](#api-reference)** - Complete API documentation
+- **[Usage Examples](#usage-examples)** - Practical examples for all features
+- **[IP Calculations Guide](./docs/IP_CALCULATIONS.md)** - Deep dive into the mathematical foundations and BigInt-based calculations
+- **[Contributing Guide](./CONTRIBUTING.md)** - Development setup and contribution guidelines
+
 ## Quick Start
 
 ```typescript
@@ -592,7 +599,7 @@ console.log('All routes:', allRoutes);
 
 ## Caveats and Design Decisions
 
-- **BigInt Usage**: All IP math uses BigInt to avoid floating-point precision issues with large IPv6 addresses.
+- **BigInt Usage**: All IP math uses BigInt to avoid floating-point precision issues with large IPv6 addresses. See our [IP Calculations Guide](./docs/IP_CALCULATIONS.md) for detailed explanations.
 - **Lazy Iterators**: Methods like `hosts()`, `subnets()`, and `ips()` return generators to handle large ranges efficiently without memory issues.
 - **IPv4 /31 and /32 Handling**: For point-to-point links (/31) and single-host (/32), `hosts()` includes all addresses by default. Use `{ includeEdges: false }` to exclude network/broadcast.
 - **IPv6 Edge Inclusion**: IPv6 ranges always include network and broadcast addresses in iterations, as there's no traditional broadcast concept.

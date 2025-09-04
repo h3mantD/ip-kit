@@ -112,6 +112,8 @@ ip-kit/
 ├── tests/                 # Test files
 │   ├── core/              # Core utility tests
 │   └── domain/            # Domain model tests
+├── docs/                  # Documentation
+│   └── IP_CALCULATIONS.md # IP math and BigInt calculations guide
 ├── .github/               # GitHub configuration
 │   ├── workflows/         # CI/CD workflows
 │   └── prompts/           # Development prompts
@@ -125,7 +127,7 @@ ip-kit/
 ### Architecture Principles
 
 - **Type Safety**: Strict TypeScript with generics for version-specific operations
-- **BigInt Math**: All IP calculations use BigInt for precision
+- **BigInt Math**: All IP calculations use BigInt for precision (see [IP Calculations Guide](../docs/IP_CALCULATIONS.md))
 - **Lazy Evaluation**: Generators for memory-efficient iteration
 - **Error Handling**: Custom error classes for specific failure modes
 - **Modular Design**: Clear separation between core utilities and domain logic
@@ -212,18 +214,18 @@ git push origin feature/your-feature-name
 ### Writing Tests
 
 ```typescript
-import { describe, it, expect } from "vitest";
-import { IPv4 } from "../../src/domain/ip";
+import { describe, it, expect } from 'vitest';
+import { IPv4 } from '../../src/domain/ip';
 
-describe("IPv4", () => {
-  describe("parse", () => {
-    it("should parse valid IPv4 string", () => {
-      const ip = IPv4.parse("192.168.1.1");
-      expect(ip.toString()).toBe("192.168.1.1");
+describe('IPv4', () => {
+  describe('parse', () => {
+    it('should parse valid IPv4 string', () => {
+      const ip = IPv4.parse('192.168.1.1');
+      expect(ip.toString()).toBe('192.168.1.1');
     });
 
-    it("should throw on invalid input", () => {
-      expect(() => IPv4.parse("256.1.1.1")).toThrow();
+    it('should throw on invalid input', () => {
+      expect(() => IPv4.parse('256.1.1.1')).toThrow();
     });
   });
 });
