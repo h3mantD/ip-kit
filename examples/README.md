@@ -2,6 +2,10 @@
 
 This directory contains examples demonstrating the various features of the IP Toolkit.
 
+## Understanding the Math
+
+For detailed explanations of how IP calculations work under the hood, including BigInt usage and CIDR mathematics, see our **[IP Calculations Guide](../docs/IP_CALCULATIONS.md)**.
+
 ## Running Examples
 
 ### Prerequisites
@@ -39,19 +43,30 @@ npx tsx examples/basic.ts
 ## Example Categories
 
 ### Basic Operations
+
 - IP address parsing and formatting
 - CIDR network calculations
 - IP range operations
 
 ### Advanced Features
+
 - Range set operations (union, intersect, subtract)
 - IP address allocation and management
 - Longest prefix matching with radix trie
 
 ### Real-world Use Cases
+
 - IPAM (IP Address Management) system
 - Routing table implementation
 - Network planning and analysis
+
+### Mathematical Foundations
+
+- See **[IP Calculations Guide](../docs/IP_CALCULATIONS.md)** for detailed explanations of:
+  - BigInt-based arithmetic
+  - CIDR mathematics and subnetting algorithms
+  - Range-to-CIDR conversion
+  - IPv6 normalization (RFC 5952)
 
 ## Example Files
 

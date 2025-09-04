@@ -9,6 +9,7 @@ import {
   networkOf,
   broadcastOf,
   bitAtMSB,
+  maxAlignedBlock,
 } from '../../src/core/bigint';
 
 describe('bigint utils', () => {
@@ -41,5 +42,28 @@ describe('bigint utils', () => {
   it('bitAtMSB', () => {
     expect(bitAtMSB(0x80000000n, 0, 32)).toBe(true);
     expect(bitAtMSB(0x40000000n, 0, 32)).toBe(false);
+  });
+
+  it('maxAlignedBlock - aligned start', () => {
+    // range 0..255 should yield /24 at 0
+    const res = maxAlignedBlock(0n, 255n, 32);
+    expect(res).not.toBeNull();
+  // /24 == prefix 24 for a 256-address block
+  expect(res!.prefix).toBe(24);
+    expect(res!.block).toBe(0n);
+  });
+
+  it('maxAlignedBlock - unaligned start but larger block fits later', () => {
+    // start 5, end 20 -> largest aligned block of size 8 is at 8..15 => prefix 29 (32-3)
+    const res = maxAlignedBlock(5n, 20n, 32);
+    expect(res).not.toBeNull();
+    expect(res!.block).toBe(8n);
+  });
+
+  it('maxAlignedBlock - single address', () => {
+    const res = maxAlignedBlock(1000n, 1000n, 32);
+    expect(res).not.toBeNull();
+    expect(res!.prefix).toBe(32);
+    expect(res!.block).toBe(1000n);
   });
 });

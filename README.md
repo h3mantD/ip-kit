@@ -6,6 +6,13 @@ TypeScript IP Toolkit for IPv4/IPv6 math, CIDR operations, ranges, allocation, a
 [![npm version](https://img.shields.io/npm/v/@h3mantd/ip-kit.svg)](https://www.npmjs.com/package/@h3mantd/ip-kit)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
+## Documentation
+
+- **[API Reference](#api-reference)** - Complete API documentation
+- **[Usage Examples](#usage-examples)** - Practical examples for all features
+- **[IP Calculations Guide](./docs/IP_CALCULATIONS.md)** - Deep dive into the mathematical foundations and BigInt-based calculations
+- **[Contributing Guide](./CONTRIBUTING.md)** - Development setup and contribution guidelines
+
 ## Quick Start
 
 ```typescript
@@ -32,8 +39,19 @@ for (const host of network.hosts()) {
 }
 
 // Subnetting
-const subnets = Array.from(network.subnets(26));
-console.log(subnets.length); // 4
+// Prefer generator usage for large splits to avoid materializing large arrays:
+// Good (generator): iterate lazily
+let count = 0;
+for (const s of network.subnets(26)) {
+  count++;
+}
+console.log(count); // 4
+
+// Avoid using `split()` on very large networks — it returns an array and
+// can allocate millions of CIDR objects for IPv6-sized spaces.
+// If you really need all entries in memory, use `split()`:
+// const subnets = network.split(26);
+// console.log(subnets.length); // 4
 ```
 
 > 💡 **See more examples** in the [`examples/`](./examples/) directory!
@@ -42,8 +60,8 @@ console.log(subnets.length); // 4
 
 ### Prerequisites
 
-- Node.js 18 or higher
-- npm or pnpm
+- Node.js 18 or higher (BigInt support required)
+- npm, pnpm or yarn
 
 ### Install
 
@@ -301,8 +319,11 @@ const cidr = CIDR.parse('2001:db8::/32');
 console.log(cidr.size()); // 79228162514264337593543950336n
 
 // IPv6 always includes all addresses in hosts()
-const hosts = Array.from(cidr.hosts({ includeEdges: true }));
-console.log(hosts.length); // Very large, use with limit
+// Use the generator form to avoid materializing huge arrays:
+for (const h of cidr.hosts({ includeEdges: true })) {
+  // process host lazily
+  break; // example: stop after first
+}
 ```
 
 ### IP Ranges
@@ -447,6 +468,34 @@ try {
 }
 ```
 
+## Errors & Types
+
+- This library throws a small set of custom errors exported from `src/core/errors.ts`:
+  - `ParseError` — input parsing failures
+  - `InvariantError` — internal invariant violation (logic error)
+  - `OutOfRangeError` — numeric or prefix out-of-range
+  - `VersionMismatchError` — operations attempted with mixed IP versions
+
+- Important: most address/size arithmetic uses `BigInt`. Where counts are small (indexes, array sizes) `number` is used, but IP math and sizes return `bigint`.
+
+## Test & Development (recommended)
+
+Run these commands from the project root:
+
+```bash
+# install dependencies (use npm or pnpm as preferred)
+npm ci
+
+# typecheck
+npm run typecheck
+
+# run tests
+npm test
+
+# build
+npm run build
+```
+
 ## Advanced Examples
 
 ### IPAM (IP Address Management) System
@@ -550,12 +599,14 @@ console.log('All routes:', allRoutes);
 
 ## Caveats and Design Decisions
 
-- **BigInt Usage**: All IP math uses BigInt to avoid floating-point precision issues with large IPv6 addresses.
+- **BigInt Usage**: All IP math uses BigInt to avoid floating-point precision issues with large IPv6 addresses. See our [IP Calculations Guide](./docs/IP_CALCULATIONS.md) for detailed explanations.
 - **Lazy Iterators**: Methods like `hosts()`, `subnets()`, and `ips()` return generators to handle large ranges efficiently without memory issues.
 - **IPv4 /31 and /32 Handling**: For point-to-point links (/31) and single-host (/32), `hosts()` includes all addresses by default. Use `{ includeEdges: false }` to exclude network/broadcast.
 - **IPv6 Edge Inclusion**: IPv6 ranges always include network and broadcast addresses in iterations, as there's no traditional broadcast concept.
 - **RFC 5952 Normalization**: IPv6 addresses are automatically normalized to the canonical compressed form.
 - **Type Safety**: Strict TypeScript with generics ensures version-specific operations are type-checked.
+
+- **split() materializes results**: `CIDR.split(parts)` returns an array of CIDR objects. For large `parts` (especially with IPv6), this can allocate millions of objects and exhaust memory. Prefer iterating the generator returned by `subnets()` for large or unbounded splits.
 
 ## Development
 

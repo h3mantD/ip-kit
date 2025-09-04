@@ -5,12 +5,14 @@
 
 import { IP, IPv4, IPv6, IPVersion } from './ip';
 import { CIDR } from './cidr';
+import { VersionMismatchError } from '../core/errors';
 
 interface TrieNode<T> {
   children: Map<number, TrieNode<T>>;
   value?: T;
   prefixLength: number;
   storedPrefix?: number; // Store the actual prefix length for this value
+  network?: bigint; // store network address as bigint when a value is assigned
 }
 
 export class RadixTrie<V extends IPVersion = IPVersion, T = unknown> {
@@ -30,7 +32,7 @@ export class RadixTrie<V extends IPVersion = IPVersion, T = unknown> {
    */
   insert(cidr: CIDR<V>, value?: T): this {
     if (cidr.version !== this.version) {
-      throw new Error('CIDR version must match trie version');
+      throw new VersionMismatchError('CIDR version must match trie version');
     }
 
     let node = this.root;
@@ -47,9 +49,9 @@ export class RadixTrie<V extends IPVersion = IPVersion, T = unknown> {
       }
       node = node.children.get(bit)!;
     }
-
     node.value = value;
     node.storedPrefix = cidr.prefix;
+    node.network = cidr.network().toBigInt();
     return this;
   }
 
@@ -58,7 +60,7 @@ export class RadixTrie<V extends IPVersion = IPVersion, T = unknown> {
    */
   remove(cidr: CIDR<V>): this {
     if (cidr.version !== this.version) {
-      throw new Error('CIDR version must match trie version');
+      throw new VersionMismatchError('CIDR version must match trie version');
     }
 
     const path: TrieNode<T>[] = [];
@@ -78,6 +80,8 @@ export class RadixTrie<V extends IPVersion = IPVersion, T = unknown> {
 
     // Remove the value
     delete node.value;
+    delete node.storedPrefix;
+    delete node.network;
 
     // Clean up empty nodes
     for (let i = path.length - 1; i >= 0; i--) {
@@ -100,17 +104,17 @@ export class RadixTrie<V extends IPVersion = IPVersion, T = unknown> {
    */
   longestMatch(ip: IP<V>): { cidr: CIDR<V>; value?: T } | null {
     if (ip.version !== this.version) {
-      throw new Error('IP version must match trie version');
+      throw new VersionMismatchError('IP version must match trie version');
     }
 
     let node = this.root;
-    let bestMatch: { node: TrieNode<T>; prefixLength: number } | null = null;
+    let bestNode: TrieNode<T> | null = null;
     const bits = ip.version === 4 ? 32 : 128;
     const ipValue = ip.toBigInt();
 
     for (let bitPos = 0; bitPos < bits; bitPos++) {
       if (node.value !== undefined) {
-        bestMatch = { node, prefixLength: bitPos };
+        bestNode = node;
       }
 
       const bit = Number((ipValue >> BigInt(bits - 1 - bitPos)) & 1n);
@@ -122,18 +126,15 @@ export class RadixTrie<V extends IPVersion = IPVersion, T = unknown> {
 
     // Check the final node
     if (node.value !== undefined) {
-      bestMatch = { node, prefixLength: bits };
+      bestNode = node;
     }
 
-    if (!bestMatch) {
-      return null;
-    }
+    if (!bestNode) return null;
 
-    // Reconstruct the CIDR from the path
-    const cidr = this.reconstructCIDR(ip, bestMatch.node);
+    const cidr = this.reconstructCIDR(ip, bestNode);
     return {
       cidr,
-      value: bestMatch.node.value,
+      value: bestNode.value,
     };
   }
 
@@ -164,14 +165,27 @@ export class RadixTrie<V extends IPVersion = IPVersion, T = unknown> {
 
   private reconstructCIDR(ip: IP<V>, node: TrieNode<T>): CIDR<V> {
     const prefixLength = node.storedPrefix!;
+    if (node.network !== undefined) {
+      const networkIP =
+        ip.version === 4 ? IPv4.fromBigInt(node.network) : IPv6.fromBigInt(node.network);
+      if (this.version === 4) {
+        return CIDR.from(networkIP as IPv4, prefixLength) as CIDR<V>;
+      } else {
+        return CIDR.from(networkIP as IPv6, prefixLength) as CIDR<V>;
+      }
+    }
+
+    // Fallback: reconstruct using the searched IP (legacy behaviour)
     const bits = ip.version === 4 ? 32 : 128;
     const mask = (1n << BigInt(bits - prefixLength)) - 1n;
     const networkValue = ip.toBigInt() & ~mask;
-
     const networkIP =
       ip.version === 4 ? IPv4.fromBigInt(networkValue) : IPv6.fromBigInt(networkValue);
-
-    return (CIDR as any).from(networkIP, prefixLength) as CIDR<V>;
+    if (ip.version === 4) {
+      return CIDR.from(networkIP as IPv4, prefixLength) as CIDR<V>;
+    } else {
+      return CIDR.from(networkIP as IPv6, prefixLength) as CIDR<V>;
+    }
   }
 
   private collectCIDRs(
@@ -181,10 +195,24 @@ export class RadixTrie<V extends IPVersion = IPVersion, T = unknown> {
     result: CIDR<V>[]
   ): void {
     if (node.value !== undefined) {
-      const networkIP =
-        this.version === 4 ? IPv4.fromBigInt(currentValue) : IPv6.fromBigInt(currentValue);
       const prefixLength = node.storedPrefix!;
-      result.push((CIDR as any).from(networkIP, prefixLength) as CIDR<V>);
+      if (node.network !== undefined) {
+        const networkIP =
+          this.version === 4 ? IPv4.fromBigInt(node.network) : IPv6.fromBigInt(node.network);
+        if (this.version === 4) {
+          result.push(CIDR.from(networkIP as IPv4, prefixLength) as CIDR<V>);
+        } else {
+          result.push(CIDR.from(networkIP as IPv6, prefixLength) as CIDR<V>);
+        }
+      } else {
+        const networkIP =
+          this.version === 4 ? IPv4.fromBigInt(currentValue) : IPv6.fromBigInt(currentValue);
+        if (this.version === 4) {
+          result.push(CIDR.from(networkIP as IPv4, prefixLength) as CIDR<V>);
+        } else {
+          result.push(CIDR.from(networkIP as IPv6, prefixLength) as CIDR<V>);
+        }
+      }
     }
 
     const bits = this.version === 4 ? 32 : 128;

@@ -19,7 +19,7 @@ export class Allocator<V extends IPVersion = IPVersion> {
     this.version = parent.version;
 
     // Validate that all taken ranges are within the parent
-    for (const range of this._taken['ranges']) {
+    for (const range of this._taken.toArray()) {
       if (!parent.contains(range.start) || !parent.contains(range.end)) {
         throw new ParseError('Taken ranges must be within the parent CIDR');
       }
@@ -34,7 +34,7 @@ export class Allocator<V extends IPVersion = IPVersion> {
    * Find the next available IP address starting from the given IP.
    */
   nextAvailable(from?: IP<V>): IP<V> | null {
-    const startIp = from || this.parent.firstHost();
+    const startIp = from || this.parent.firstHost({ includeEdges: false });
 
     // If the start IP is already taken, find the next one
     if (this._taken.contains(startIp as IP<V>)) {
@@ -68,8 +68,13 @@ export class Allocator<V extends IPVersion = IPVersion> {
       return false;
     }
 
-    const range = (IPRange as any).from(ip, ip) as IPRange<V>;
-    const newTakenRanges = [...this._taken['ranges'], range];
+    let range: IPRange<V>;
+    if (this.version === 4) {
+      range = IPRange.from(ip as IPv4, ip as IPv4) as IPRange<V>;
+    } else {
+      range = IPRange.from(ip as IPv6, ip as IPv6) as IPRange<V>;
+    }
+    const newTakenRanges = [...this._taken.toArray(), range];
     this._taken = RangeSet.fromRanges(newTakenRanges);
     return true;
   }
@@ -88,7 +93,7 @@ export class Allocator<V extends IPVersion = IPVersion> {
     }
 
     const range = cidr.toRange();
-    const newTakenRanges = [...this._taken['ranges'], range];
+    const newTakenRanges = [...this._taken.toArray(), range];
     this._taken = RangeSet.fromRanges(newTakenRanges);
     return true;
   }
@@ -131,20 +136,42 @@ export class Allocator<V extends IPVersion = IPVersion> {
    */
   utilization(): number {
     const total = this.parent.size();
-    const taken = this._taken.size();
-    return Number(taken) / Number(total);
+    let taken = this._taken.size();
+
+    // If total is small enough, do a direct conversion.
+    const maxSafe = BigInt(Number.MAX_SAFE_INTEGER);
+    if (total <= maxSafe) {
+      return Number(taken) / Number(total);
+    }
+
+    // Scale both down by right-shifting until total fits into Number.MAX_SAFE_INTEGER.
+    // This preserves the ratio approximately and avoids converting huge BigInts to Number.
+    let scaledTotal = total;
+    let scaledTaken = taken;
+    while (scaledTotal > maxSafe) {
+      scaledTotal >>= 1n;
+      scaledTaken >>= 1n;
+    }
+
+    if (scaledTotal === 0n) return 0;
+    return Number(scaledTaken) / Number(scaledTotal);
   }
 
   // Private helper methods
 
   private findNextAvailable(from: IP<V>): IP<V> | null {
-    const fromBigInt = from.toBigInt();
-    const parentEnd = this.parent.toRange().end.toBigInt();
-
-    for (let current = fromBigInt + 1n; current <= parentEnd; current++) {
-      const ip = this.version === 4 ? IPv4.fromBigInt(current) : IPv6.fromBigInt(current);
-      if (!this._taken.contains(ip as IP<V>)) {
-        return ip as IP<V>;
+    // Efficient approach: iterate free ranges and pick first address after `from`.
+    const fromVal = from.toBigInt();
+    const freeRanges = this.getFreeRanges();
+    for (const r of freeRanges) {
+      const start = r.start.toBigInt();
+      const end = r.end.toBigInt();
+      if (end < fromVal) continue;
+      const candidate = start >= fromVal ? start : fromVal + 1n;
+      if (candidate <= end) {
+        return this.version === 4
+          ? (IPv4.fromBigInt(candidate) as IP<V>)
+          : (IPv6.fromBigInt(candidate) as IP<V>);
       }
     }
 
@@ -157,7 +184,7 @@ export class Allocator<V extends IPVersion = IPVersion> {
   }
 
   private overlapsTaken(range: IPRange<V>): boolean {
-    for (const takenRange of this._taken['ranges']) {
+    for (const takenRange of this._taken.toArray()) {
       if (takenRange.overlaps(range)) {
         return true;
       }
@@ -169,6 +196,6 @@ export class Allocator<V extends IPVersion = IPVersion> {
     const parentRange = this.parent.toRange();
     const parentRangeSet = RangeSet.fromRanges([parentRange]);
     const freeSet = parentRangeSet.subtract(this._taken);
-    return freeSet['ranges'];
+    return freeSet.toArray();
   }
 }

@@ -3,6 +3,9 @@
 /**
  * IP Toolkit Examples
  * Run with: node examples/basic.js
+ *
+ * For detailed explanations of the underlying mathematics and BigInt calculations,
+ * see: ../docs/IP_CALCULATIONS.md
  */
 
 import { IPv4, IPv6, CIDR, IPRange, RangeSet, Allocator, RadixTrie } from '../dist/index.js';
@@ -25,13 +28,26 @@ console.log(`Broadcast: ${cidr.broadcast().toString()}`);
 console.log(`Size: ${cidr.size()} addresses`);
 console.log(`Contains 192.168.1.50: ${cidr.contains(IPv4.parse('192.168.1.50'))}\n`);
 
+// Subnetting (generator example)
+console.log('4a. Subnetting /24 into /26 subnets (generator):');
+let idx = 0;
+for (const s of cidr.subnets(26)) {
+  console.log(`Subnet ${++idx}: ${s.toString()}`);
+}
+console.log();
+
 // Range operations
 console.log('3. IP Range Operations:');
 const range = IPRange.parse('192.168.1.10 - 192.168.1.20');
 console.log(`Range: ${range.toString()}`);
 console.log(`Size: ${range.size()} addresses`);
 console.log(`Contains 192.168.1.15: ${range.contains(IPv4.parse('192.168.1.15'))}`);
-console.log(`Minimal CIDRs: ${range.toCIDRs().map(c => c.toString()).join(', ')}\n`);
+console.log(
+  `Minimal CIDRs: ${range
+    .toCIDRs()
+    .map((c) => c.toString())
+    .join(', ')}\n`
+);
 
 // Range set operations
 console.log('4. Range Set Operations:');
@@ -41,7 +57,12 @@ const union = set1.union(set2);
 console.log(`Set 1 size: ${set1.size()}`);
 console.log(`Set 2 size: ${set2.size()}`);
 console.log(`Union size: ${union.size()}`);
-console.log(`Union as CIDRs: ${union.toCIDRs().map(c => c.toString()).join(', ')}\n`);
+console.log(
+  `Union as CIDRs: ${union
+    .toCIDRs()
+    .map((c) => c.toString())
+    .join(', ')}\n`
+);
 
 // IP allocation
 console.log('5. IP Address Allocation:');
@@ -54,6 +75,11 @@ console.log(`Allocated IP: ${allocatedIP?.toString()}`);
 console.log(`Available IPs: ${allocator.availableCount()}`);
 console.log(`Utilization: ${(allocator.utilization() * 100).toFixed(1)}%`);
 console.log(`Free /25 blocks: ${freeBlocks.length}\n`);
+
+// Demonstrate first/last host semantics for the parent CIDR
+console.log('First host (default):', parent.firstHost().toString());
+console.log('Last host (default):', parent.lastHost().toString());
+console.log('First host (includeEdges=true):', parent.firstHost({ includeEdges: true }).toString());
 
 // Longest prefix matching
 console.log('6. Longest Prefix Matching:');

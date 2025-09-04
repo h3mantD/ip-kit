@@ -6,7 +6,7 @@
  * Run with: pnpm tsx examples/basic.ts
  */
 
-import { ip, cidr, IPv4, CIDR, IPRange } from "../src/index";
+import { ip, cidr, IPv4, CIDR, IPRange, Allocator } from "../src/index";
 
 console.log("=== IP Toolkit Basic Examples ===\n");
 
@@ -39,12 +39,13 @@ for (const host of network.hosts()) {
 console.log("...\n");
 
 // 4. Subnetting
-console.log("4. Subnetting /24 into /26 subnets:");
+console.log("4. Subnetting /24 into /26 subnets (generator):");
 const ipv4Network = network as CIDR<4>;
-const subnets = Array.from(ipv4Network.subnets(26));
-subnets.forEach((subnet, i) => {
-  console.log(`Subnet ${i + 1}: ${subnet.toString()}`);
-});
+let idx = 0;
+for (const subnet of ipv4Network.subnets(26)) {
+  console.log(`Subnet ${++idx}: ${subnet.toString()}`);
+}
+// Avoid Array.from(...) on very large networks — prefer the generator above.
 console.log();
 
 // 5. IP Ranges
@@ -66,6 +67,25 @@ const v6cidr = cidr("2001:db8::/32");
 console.log(`IPv6 CIDR: ${v6cidr.toString()}`);
 console.log(`Size: ${v6cidr.size()} addresses`);
 console.log(`Network: ${v6cidr.network().toString()}\n`);
+console.log();
+
+// Demonstrate firstHost()/lastHost() semantics (IPv4)
+console.log("First/Last host semantics for IPv4 /24:");
+console.log(`First host (default): ${ipv4Network.firstHost().toString()}`);
+console.log(`Last host (default): ${ipv4Network.lastHost().toString()}`);
+console.log(
+  `First host (includeEdges=true): ${ipv4Network.firstHost({ includeEdges: true }).toString()}`,
+);
+console.log();
+
+// 8. Allocator demonstration
+console.log("8. Allocator demonstration:");
+const allocator = new Allocator(ipv4Network);
+const allocated = allocator.allocateNext();
+console.log(`Allocated IP: ${allocated?.toString()}`);
+console.log(`Available IPs: ${allocator.availableCount()}`);
+console.log(`Utilization: ${(allocator.utilization() * 100).toFixed(1)}%`);
+console.log();
 
 // 7. Error Handling
 console.log("7. Error Handling:");
