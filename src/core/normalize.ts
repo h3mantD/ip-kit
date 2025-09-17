@@ -34,7 +34,7 @@ export function normalizeV6Groups(groups: number[]): { text: string; mappedV4?: 
     throw new ParseError('IPv6 must have 8 groups');
   }
 
-  // Check for v4-mapped: ::ffff:w.x.y.z -> groups[0..4]==0 and groups[5]==0xffff
+  // Check for IPv4-mapped: ::ffff:w.x.y.z -> groups[0..4]==0 and groups[5]==0xffff
   let mappedV4: string | undefined;
   if (groups.slice(0, 5).every((g) => g === 0) && groups[5] === 0xffff) {
     // last 32 bits are in groups[6] (high 16) and groups[7] (low 16)
@@ -42,6 +42,28 @@ export function normalizeV6Groups(groups: number[]): { text: string; mappedV4?: 
     const low = groups[7] & 0xffff;
     const v4num = (high << 16) | low;
     mappedV4 = `${(v4num >>> 24) & 0xff}.${(v4num >>> 16) & 0xff}.${(v4num >>> 8) & 0xff}.${v4num & 0xff}`;
+
+    // Return mixed notation for IPv4-mapped addresses
+    return { text: `::ffff:${mappedV4}`, mappedV4 };
+  }
+
+  // Check for IPv4-compatible: ::w.x.y.z -> groups[0..5]==0
+  // But exclude unspecified (::) and loopback (::1) addresses
+  if (groups.slice(0, 6).every((g) => g === 0)) {
+    const high = groups[6] & 0xffff;
+    const low = groups[7] & 0xffff;
+    const v4num = (high << 16) | low;
+
+    // Special cases that should NOT use mixed notation:
+    // - Unspecified address (::) - all zeros
+    // - Loopback address (::1)
+    if (v4num === 0 || v4num === 1) {
+      // Let normal IPv6 formatting handle these
+    } else {
+      // Use mixed notation for other IPv4-compatible addresses
+      const ipv4Str = `${(v4num >>> 24) & 0xff}.${(v4num >>> 16) & 0xff}.${(v4num >>> 8) & 0xff}.${v4num & 0xff}`;
+      return { text: `::${ipv4Str}` };
+    }
   }
 
   const zeroRun = findLongestZeroRun(groups);
