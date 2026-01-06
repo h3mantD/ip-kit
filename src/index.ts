@@ -1,6 +1,6 @@
 // Public exports for IP Toolkit
 
-export { IP, IPv4, IPv6, IPVersion } from './domain/ip';
+export { IP, IPv4, IPv6 } from './domain/ip';
 export { CIDR } from './domain/cidr';
 export { IPRange } from './domain/range';
 export { RangeSet } from './domain/rangeset';
