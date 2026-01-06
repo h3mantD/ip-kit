@@ -97,6 +97,18 @@ describe('IPv6', () => {
   it('invalid parse', () => {
     expect(() => IPv6.parse('invalid')).toThrow();
   });
+
+  it('should reject triple colon', () => {
+    expect(() => IPv6.parse(':::1')).toThrow('too many consecutive colons');
+    expect(() => IPv6.parse('1:::2')).toThrow('too many consecutive colons');
+    expect(() => IPv6.parse(':::::')).toThrow('too many consecutive colons');
+  });
+
+  it('should reject multiple double colons', () => {
+    expect(() => IPv6.parse('::1::2')).toThrow('multiple :: compressions');
+    expect(() => IPv6.parse('1::2::3')).toThrow('multiple :: compressions');
+    expect(() => IPv6.parse('::1::2::3')).toThrow('multiple :: compressions');
+  });
 });
 
 describe('IP static methods', () => {
