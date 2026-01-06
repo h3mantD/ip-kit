@@ -82,14 +82,41 @@ describe('IPv6 Mixed Notation (IPv4-mapped/compatible)', () => {
       expect(() => IPv6.parse('::1.1.1')).toThrow('Invalid IPv4 part');
       expect(() => IPv6.parse('::1.1.1.1.1')).toThrow('Invalid IPv4 part');
       expect(() => IPv6.parse('::1..1.1')).toThrow('Invalid IPv4 part');
+      expect(() => IPv6.parse('::192.168.1.')).toThrow('Invalid IPv4 part');
+      expect(() => IPv6.parse('::192.168.1.1.')).toThrow('Invalid IPv4 part');
+    });
+
+    it('should reject leading zeros in IPv4 octets', () => {
+      expect(() => IPv6.parse('::192.168.01.1')).toThrow('Invalid IPv4 part');
+      expect(() => IPv6.parse('::192.168.001.1')).toThrow('Invalid IPv4 part');
+    });
+
+    it('should reject IPv4 part with whitespace', () => {
+      expect(() => IPv6.parse(':: 192.168.1.1')).toThrow('Invalid IPv4 part');
+      expect(() => IPv6.parse('::ffff: 192.168.1.1')).toThrow('Invalid IPv4 part');
     });
 
     it('should reject too many IPv6 groups in mixed notation', () => {
       expect(() => IPv6.parse('1:2:3:4:5:6:7:8:192.168.1.1')).toThrow('Invalid IPv6 part');
+      expect(() => IPv6.parse('1:2:3:4:5:6:7:192.168.1.1')).toThrow('Invalid IPv6 part');
+    });
+
+    it('should reject too few IPv6 groups in mixed notation', () => {
+      expect(() => IPv6.parse('1:2:192.168.1.1')).toThrow('Invalid IPv6');
     });
 
     it('should reject invalid hex in IPv6 part', () => {
       expect(() => IPv6.parse('gggg::192.168.1.1')).toThrow('Invalid IPv6 part');
+    });
+
+    it('should reject triple colon in mixed notation', () => {
+      expect(() => IPv6.parse(':::192.168.1.1')).toThrow('too many consecutive colons');
+      expect(() => IPv6.parse(':::ffff:192.168.1.1')).toThrow('too many consecutive colons');
+    });
+
+    it('should reject multiple double colons in mixed notation', () => {
+      expect(() => IPv6.parse('::1::192.168.1.1')).toThrow('multiple :: compressions');
+      expect(() => IPv6.parse('1::2::192.168.1.1')).toThrow('multiple :: compressions');
     });
   });
 

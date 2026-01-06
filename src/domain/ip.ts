@@ -202,7 +202,38 @@ export class IPv6 extends IP<6> {
     throw new ParseError(`Unsupported input type for IPv6: ${typeof input}`);
   }
 
+  /**
+   * Validates that there is at most one `::` compression in the address.
+   * Rejects invalid formats like `:::`, `::1::2`, etc.
+   */
+  private static validateSingleCompression(parts: string[], originalInput: string): void {
+    let compressionFound = false;
+    let i = 0;
+
+    while (i < parts.length) {
+      if (parts[i] === '') {
+        if (compressionFound) {
+          // Found a second compression sequence
+          throw new ParseError(`Invalid IPv6 format (multiple :: compressions): ${originalInput}`);
+        }
+        compressionFound = true;
+
+        // Skip all consecutive empty strings (the :: compression)
+        while (i < parts.length && parts[i] === '') {
+          i++;
+        }
+      } else {
+        i++;
+      }
+    }
+  }
+
   private static expandGroups(s: string): number[] {
+    // Reject invalid formats with 3+ consecutive colons (:::, ::::, etc.)
+    if (/:{3,}/.test(s)) {
+      throw new ParseError(`Invalid IPv6 format (too many consecutive colons): ${s}`);
+    }
+
     // Check for mixed IPv6/IPv4 notation pattern (colon followed by what looks like IPv4)
     // More permissive pattern to catch malformed cases for proper error handling
     const possibleMixedMatch = s.match(/^(.*):([^:]+)$/);
@@ -235,6 +266,10 @@ export class IPv6 extends IP<6> {
 
         // Parse IPv6 part (should result in 6 groups when expanded)
         let ipv6Parts = ipv6Part.split(':');
+
+        // Validate single compression
+        IPv6.validateSingleCompression(ipv6Parts, s);
+
         const doubleColonIndex = ipv6Parts.indexOf('');
         if (doubleColonIndex !== -1) {
           const missing = 6 - (ipv6Parts.length - 1); // 6 groups for IPv6 part in mixed notation
@@ -263,6 +298,10 @@ export class IPv6 extends IP<6> {
 
     // Standard IPv6 notation - expand :: and split into 8 groups
     let parts = s.split(':');
+
+    // Validate single compression
+    IPv6.validateSingleCompression(parts, s);
+
     const doubleColonIndex = parts.indexOf('');
     if (doubleColonIndex !== -1) {
       const missing = 8 - (parts.length - 1);
