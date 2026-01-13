@@ -1,11 +1,13 @@
 // Public exports for IP Toolkit
 
-export { IP, IPv4, IPv6, IPVersion } from './domain/ip';
+export { IP, IPv4, IPv6 } from './domain/ip';
+export type { IPVersion } from './domain/ip';
 export { CIDR } from './domain/cidr';
 export { IPRange } from './domain/range';
 export { RangeSet } from './domain/rangeset';
 export { Allocator } from './domain/allocator';
 export { RadixTrie } from './domain/trie';
+export { ParseError, VersionMismatchError, OutOfRangeError, InvariantError } from './core/errors';
 
 // Factory functions
 import { IP, IPv4, IPv6 } from './domain/ip';

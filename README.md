@@ -88,6 +88,8 @@ npm run build
 ## Features
 
 - ✅ IPv4/IPv6 parsing and formatting (string, number, bigint, bytes)
+- ✅ **IPv6 mixed notation** (IPv4-mapped/compatible addresses like `::ffff:192.0.2.1`)
+- ✅ **RFC 5952 IPv6 normalization** and **RFC 4291 mixed notation** support
 - ✅ CIDR operations (network, broadcast, contains, overlaps)
 - ✅ Host iteration with proper /31 and /127 handling
 - ✅ Subnetting and splitting
@@ -99,7 +101,7 @@ npm run build
 - ✅ Lazy iterators for memory efficiency
 - ✅ TypeScript strict mode with full type safety
 - ✅ Dual ESM/CJS builds with TypeScript declarations
-- ✅ Comprehensive test coverage (106+ tests)
+- ✅ Comprehensive test coverage (160+ tests)
 
 ## API Reference
 
@@ -310,7 +312,7 @@ console.log(subnets.map((s) => s.toString()));
 ```typescript
 import { IPv6, CIDR } from 'ip-kit';
 
-// Parse with compression
+// Parse with compression (RFC 5952 normalization)
 const ip = IPv6.parse('2001:0db8:0000:0000:0000:0000:0000:0001');
 console.log(ip.toString()); // '2001:db8::1'
 
@@ -324,6 +326,67 @@ for (const h of cidr.hosts({ includeEdges: true })) {
   // process host lazily
   break; // example: stop after first
 }
+```
+
+### IPv6 Mixed Notation (IPv4-mapped/compatible)
+
+```typescript
+import { IPv6, ip } from 'ip-kit';
+
+// Parse IPv4-mapped IPv6 addresses (::ffff:0:0/96)
+const mapped1 = ip('::ffff:192.0.2.128');
+console.log(mapped1.toString()); // '::ffff:192.0.2.128' (preserves dotted notation)
+
+const mapped2 = ip('::FFFF:192.168.1.1');
+console.log(mapped2.toString()); // '::ffff:192.168.1.1' (lowercase per RFC 5952)
+
+// Full form also works
+const mapped3 = ip('0:0:0:0:0:ffff:192.168.1.1');
+console.log(mapped3.toString()); // '::ffff:192.168.1.1' (compressed)
+
+// Parse IPv4-compatible IPv6 addresses (::/96, deprecated but supported)
+const compatible = ip('::192.0.2.1');
+console.log(compatible.toString()); // '::192.0.2.1'
+
+// Special cases preserve standard hex notation
+const loopback = ip('::1');
+console.log(loopback.toString()); // '::1' (not '::0.0.0.1')
+
+const unspecified = ip('::');
+console.log(unspecified.toString()); // '::' (not '::0.0.0.0')
+
+// Mixed notation works in parsing, but non-mapped addresses output as hex
+const custom = ip('2001:db8:1:1:1:1:192.168.0.10');
+console.log(custom.toString()); // '2001:db8:1:1:1:1:c0a8:a' (hex output)
+
+// Validation - all of these throw ParseError
+try {
+  ip('::ffff:256.1.1.1');        // Octet > 255
+} catch (e) { console.log(e.message); }
+
+try {
+  ip('::192.168.1');             // Incomplete IPv4 (only 3 octets)
+} catch (e) { console.log(e.message); }
+
+try {
+  ip('::192.168.01.1');          // Leading zeros not allowed
+} catch (e) { console.log(e.message); }
+
+try {
+  ip(':::192.168.1.1');          // Too many consecutive colons
+} catch (e) { console.log(e.message); }
+
+try {
+  ip('::1::192.168.1.1');        // Multiple :: compressions
+} catch (e) { console.log(e.message); }
+
+// Convert between formats
+const v4mapped = ip('::ffff:192.0.2.1');
+const bytes = v4mapped.toBytes();
+// Uint8Array(16) [0,0,0,0,0,0,0,0,0,0,0xff,0xff,192,0,2,1]
+
+const bigint = v4mapped.toBigInt();
+// 281473902969345n (0x0000_0000_0000_0000_0000_ffff_c000_0201)
 ```
 
 ### IP Ranges
@@ -603,7 +666,12 @@ console.log('All routes:', allRoutes);
 - **Lazy Iterators**: Methods like `hosts()`, `subnets()`, and `ips()` return generators to handle large ranges efficiently without memory issues.
 - **IPv4 /31 and /32 Handling**: For point-to-point links (/31) and single-host (/32), `hosts()` includes all addresses by default. Use `{ includeEdges: false }` to exclude network/broadcast.
 - **IPv6 Edge Inclusion**: IPv6 ranges always include network and broadcast addresses in iterations, as there's no traditional broadcast concept.
-- **RFC 5952 Normalization**: IPv6 addresses are automatically normalized to the canonical compressed form.
+- **RFC 5952 Normalization**: IPv6 addresses are automatically normalized to the canonical compressed form (lowercase hex, longest zero run compressed with `::`, etc.).
+- **RFC 4291 Mixed Notation**: IPv6 addresses with dotted-decimal IPv4 tails are fully supported:
+  - **IPv4-mapped** (`::ffff:x.x.x.x`) - Output preserves mixed notation
+  - **IPv4-compatible** (`::x.x.x.x`) - Output preserves mixed notation (except `::` and `::1`)
+  - **Other prefixes** - Parsed correctly but output as standard hex notation
+  - **Strict validation** - Rejects malformed input (invalid octets, multiple `::`, etc.)
 - **Type Safety**: Strict TypeScript with generics ensures version-specific operations are type-checked.
 
 - **split() materializes results**: `CIDR.split(parts)` returns an array of CIDR objects. For large `parts` (especially with IPv6), this can allocate millions of objects and exhaust memory. Prefer iterating the generator returned by `subnets()` for large or unbounded splits.
@@ -669,12 +737,15 @@ src/
 │   └── trie.ts     # Radix trie for LPM
 └── index.ts        # Public exports
 
-tests/              # Test files (106+ tests)
+tests/              # Test files (160+ tests)
 ├── core/
 │   ├── bigint.test.ts
+│   ├── normalize.test.ts
+│   ├── ptr.test.ts
 │   └── ...
 └── domain/
     ├── ip.test.ts
+    ├── ipv6-mixed.test.ts
     ├── cidr.test.ts
     ├── range.test.ts
     ├── rangeset.test.ts

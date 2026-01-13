@@ -15,10 +15,22 @@ describe('IPv6 normalization', () => {
     expect(text).toBe('2001:db8:0:1:2:3:4:5');
   });
 
-  it('ipv4 mapped detection', () => {
+  it('ipv4 mapped detection and formatting', () => {
     const groups = [0, 0, 0, 0, 0, 0xffff, 0xc0a8, 0x0101]; // ::ffff:192.168.1.1
     const { text, mappedV4 } = normalizeV6Groups(groups);
     expect(mappedV4).toBe('192.168.1.1');
-    expect(text).toContain('::ffff');
+    expect(text).toBe('::ffff:192.168.1.1');
+  });
+
+  it('ipv4 compatible detection and formatting', () => {
+    const groups = [0, 0, 0, 0, 0, 0, 0x0d01, 0x4403]; // ::13.1.68.3
+    const { text } = normalizeV6Groups(groups);
+    expect(text).toBe('::13.1.68.3');
+  });
+
+  it('preserves ::1 as hex (not ::0.0.0.1)', () => {
+    const groups = [0, 0, 0, 0, 0, 0, 0, 1]; // ::1
+    const { text } = normalizeV6Groups(groups);
+    expect(text).toBe('::1');
   });
 });

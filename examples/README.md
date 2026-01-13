@@ -48,6 +48,12 @@ npx tsx examples/basic.ts
 - CIDR network calculations
 - IP range operations
 
+### IPv6 Features
+
+- **IPv6 mixed notation** (IPv4-mapped and IPv4-compatible addresses)
+- RFC 5952 normalization
+- RFC 4291 mixed notation support
+
 ### Advanced Features
 
 - Range set operations (union, intersect, subtract)
@@ -59,6 +65,7 @@ npx tsx examples/basic.ts
 - IPAM (IP Address Management) system
 - Routing table implementation
 - Network planning and analysis
+- Dual-stack server connection mapping
 
 ### Mathematical Foundations
 
@@ -71,7 +78,13 @@ npx tsx examples/basic.ts
 ## Example Files
 
 - `basic.js` / `basic.ts` - Comprehensive demo of all features
-- More examples coming soon...
+- `ipv6-mixed-notation.ts` - IPv6 mixed notation (IPv4-mapped/compatible addresses)
+  - Parse and format `::ffff:192.0.2.1` style addresses
+  - Validation and error handling
+  - CIDR operations with mixed notation
+  - Dual-stack server use case
+
+More examples coming soon...
 
 ## Contributing
 
